@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Easy Faucet</title>
+  </head>
+  <body>
+    <input type="text" id="wallet" placeholder="Enter your wallet address" />
+    <button onclick="faucet('0xdC907cd32Bc3D6bb2c63Ede4E28c3fAcdd1d5189')">
+      Get 500_000 SCR
+    </button>
+    <button onclick="faucet('0xca152522f26811fF8FcAf967d4040F7C6BbF8eaA')">
+      Get 500 USDT
+    </button>
+    <br />
+    <a id="tx-a" target="_blank"><lable id="tx"></lable></a>
+  </body>
+  <script>
+    function faucet(contract) {
+      // const host = window.location.host;
+      const host = "scrmbl.easyfaucet.dev";
+      const name = host.replace(".easyfaucet.dev", "");
+
+      const wallet = document.getElementById("wallet").value;
+
+      const data = {
+        name: name,
+        contract: contract,
+        wallet: wallet,
+      };
+
+      // const url = "https://easyfaucet-api.deno.dev/faucet";
+      const url = "http://localhost:8000/faucet";
+      fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      }).then((resp) => {
+        resp.json().then((data) => {
+          const { tx } = data;
+          document.getElementById("tx").innerText = `Tx: ${tx}`;
+          document.getElementById(
+            "tx-a"
+          ).href = `https://amoy.polygonscan.com/tx/${tx}`;
+        });
+      });
+    }
+  </script>
+</html>
