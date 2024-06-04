@@ -19,8 +19,13 @@
   </body>
   <script>
     function faucet(contract) {
-      const host = window.location.host;
-      // const host = "scrmbl.easyfaucet.dev";
+      // disable button
+      document
+        .getElementsByTagName("button")
+        .setAttribute("disabled", "disabled");
+
+      // const host = window.location.host;
+      const host = "scrmbl.easyfaucet.dev";
       const name = host.replace(".easyfaucet.dev", "");
 
       const wallet = document.getElementById("wallet").value;
@@ -48,6 +53,9 @@
           ).href = `https://amoy.polygonscan.com/tx/${tx}`;
         });
       });
+
+      // enable button
+      document.getElementsByTagName("button").removeAttribute("disabled");
     }
   </script>
 </html>
