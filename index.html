@@ -7,6 +7,7 @@
   </head>
   <body>
     <input type="text" id="wallet" placeholder="Enter your wallet address" />
+    <br />
     <button onclick="faucet('0xdC907cd32Bc3D6bb2c63Ede4E28c3fAcdd1d5189')">
       Get 500_000 SCR
     </button>
@@ -18,8 +19,8 @@
   </body>
   <script>
     function faucet(contract) {
-      // const host = window.location.host;
-      const host = "scrmbl.easyfaucet.dev";
+      const host = window.location.host;
+      // const host = "scrmbl.easyfaucet.dev";
       const name = host.replace(".easyfaucet.dev", "");
 
       const wallet = document.getElementById("wallet").value;
@@ -30,8 +31,8 @@
         wallet: wallet,
       };
 
-      // const url = "https://easyfaucet-api.deno.dev/faucet";
-      const url = "http://localhost:8000/faucet";
+      const url = "https://easyfaucet-api.deno.dev/faucet";
+      // const url = "http://localhost:8000/faucet";
       fetch(url, {
         method: "POST",
         headers: {
