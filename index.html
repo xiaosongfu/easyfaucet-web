@@ -20,9 +20,10 @@
   <script>
     function faucet(contract) {
       // disable button
-      document
-        .getElementsByTagName("button")
-        .setAttribute("disabled", "disabled");
+      const allButtons = document.querySelectorAll("button");
+      allButtons.forEach((button) => {
+        button.disabled = true;
+      });
 
       // const host = window.location.host;
       const host = "scrmbl.easyfaucet.dev";
@@ -55,7 +56,9 @@
       });
 
       // enable button
-      document.getElementsByTagName("button").removeAttribute("disabled");
+      allButtons.forEach((button) => {
+        button.disabled = false;
+      });
     }
   </script>
 </html>
