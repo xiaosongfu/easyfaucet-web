@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Easy Faucet</title>
+    <title>SCR MBL EasyFaucet</title>
   </head>
   <body>
     <input type="text" id="wallet" placeholder="Enter your wallet address" />
@@ -25,8 +25,8 @@
         button.disabled = true;
       });
 
-      // const host = window.location.host;
-      const host = "scrmbl.easyfaucet.dev";
+      const host = window.location.host;
+      // const host = "scrmbl.easyfaucet.dev";
       const name = host.replace(".easyfaucet.dev", "");
 
       const wallet = document.getElementById("wallet").value;
@@ -45,20 +45,22 @@
           "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
-      }).then((resp) => {
-        resp.json().then((data) => {
-          const { tx } = data;
-          document.getElementById("tx").innerText = `Tx: ${tx}`;
-          document.getElementById(
-            "tx-a"
-          ).href = `https://amoy.polygonscan.com/tx/${tx}`;
+      })
+        .then((resp) => {
+          resp.json().then((data) => {
+            const { tx } = data;
+            document.getElementById("tx").innerText = `Tx: ${tx}`;
+            document.getElementById(
+              "tx-a"
+            ).href = `https://amoy.polygonscan.com/tx/${tx}`;
+          });
+        })
+        .finally(() => {
+          // enable button
+          allButtons.forEach((button) => {
+            button.disabled = false;
+          });
         });
-      });
-
-      // enable button
-      allButtons.forEach((button) => {
-        button.disabled = false;
-      });
     }
   </script>
 </html>
