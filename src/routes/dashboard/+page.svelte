@@ -357,6 +357,17 @@
         }
     }
 
+    async function shareFaucet(faucet: FaucetInfo) {
+        try {
+            const url = `${window.location.origin}/faucet/${faucet.chainId}/${faucet.address}`;
+            await navigator.clipboard.writeText(url);
+            showToastMessage("Faucet 链接已复制");
+        } catch (error) {
+            console.error("分享失败:", error);
+            showToastMessage("分享失败", true);
+        }
+    }
+
     function showToastMessage(message: string, isError: boolean = false) {
         toastMessage = message;
         showToast = true;
@@ -798,6 +809,40 @@
                                     <line x1="5" y1="12" x2="19" y2="12"></line>
                                 </svg>
                                 添加代币
+                            </button>
+                            <button
+                                class="share-faucet-btn"
+                                onclick={() => shareFaucet(faucet)}
+                                title="分享 Faucet"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                >
+                                    <circle cx="18" cy="5" r="3"></circle>
+                                    <circle cx="6" cy="12" r="3"></circle>
+                                    <circle cx="18" cy="19" r="3"></circle>
+                                    <line
+                                        x1="8.59"
+                                        y1="13.51"
+                                        x2="15.42"
+                                        y2="17.49"
+                                    ></line>
+                                    <line
+                                        x1="15.41"
+                                        y1="6.51"
+                                        x2="8.59"
+                                        y2="10.49"
+                                    ></line>
+                                </svg>
+                                分享
                             </button>
                             <a
                                 href={`/faucet/${faucet.chainId}/${faucet.address}`}
@@ -1424,6 +1469,36 @@
     }
 
     .add-token-btn svg {
+        flex-shrink: 0;
+    }
+
+    .share-faucet-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        background: rgba(102, 126, 234, 0.2);
+        color: white;
+        border: 1px solid rgba(102, 126, 234, 0.5);
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .share-faucet-btn:hover {
+        background: rgba(102, 126, 234, 0.3);
+        border-color: rgba(102, 126, 234, 0.7);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+    }
+
+    .share-faucet-btn svg {
         flex-shrink: 0;
     }
 

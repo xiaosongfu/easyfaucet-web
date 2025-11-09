@@ -296,6 +296,17 @@
             showToastFlag = false;
         }, 2000);
     }
+
+    async function shareFaucet() {
+        try {
+            const url = window.location.href;
+            await navigator.clipboard.writeText(url);
+            showToast("链接已复制到剪贴板");
+        } catch (error) {
+            console.error("复制链接失败:", error);
+            showToast("复制失败");
+        }
+    }
 </script>
 
 <div class="claim-page">
@@ -349,7 +360,33 @@
         </div>
 
         <div class="page-header">
-            <h1 class="page-title">{faucetName}</h1>
+            <div class="header-top">
+                <h1 class="page-title">{faucetName}</h1>
+                <button
+                    class="share-btn"
+                    onclick={shareFaucet}
+                    title="分享此 Faucet"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <circle cx="18" cy="5" r="3"></circle>
+                        <circle cx="6" cy="12" r="3"></circle>
+                        <circle cx="18" cy="19" r="3"></circle>
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                    </svg>
+                    <span>分享</span>
+                </button>
+            </div>
             <div class="faucet-address">
                 <span class="address-label">Faucet 地址:</span>
                 <span class="address-text">{faucetAddress}</span>
@@ -675,14 +712,50 @@
         color: white;
     }
 
+    .header-top {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+
     .page-title {
         font-size: 3rem;
         font-weight: 900;
-        margin: 0 0 1.5rem 0;
+        margin: 0;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
+    }
+
+    .share-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: rgba(102, 126, 234, 0.2);
+        border: 1px solid rgba(102, 126, 234, 0.5);
+        border-radius: 12px;
+        color: white;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+    }
+
+    .share-btn:hover {
+        background: rgba(102, 126, 234, 0.3);
+        border-color: rgba(102, 126, 234, 0.7);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .share-btn svg {
+        flex-shrink: 0;
     }
 
     .faucet-address {
@@ -967,8 +1040,18 @@
             padding: 1rem;
         }
 
+        .header-top {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
         .page-title {
             font-size: 2rem;
+        }
+
+        .share-btn {
+            padding: 0.65rem 1.25rem;
+            font-size: 0.9rem;
         }
 
         .faucet-address {
