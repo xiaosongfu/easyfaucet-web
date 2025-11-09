@@ -445,8 +445,6 @@
 </script>
 
 <div class="dashboard-container">
-    <h1>Dashboard</h1>
-
     <div class="create-faucet-section">
         <h2>创建新的 Faucet</h2>
 
@@ -679,6 +677,8 @@
                             <a
                                 href={`/faucet/${faucet.address}`}
                                 class="view-btn"
+                                target="_blank"
+                                rel="noopener noreferrer"
                             >
                                 查看
                             </a>
@@ -786,17 +786,6 @@
             sans-serif;
         color: white;
         min-height: 100vh;
-    }
-
-    h1 {
-        text-align: center;
-        font-size: 3rem;
-        font-weight: 900;
-        margin: 0 0 3rem 0;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
     }
 
     .create-faucet-section {
@@ -1311,7 +1300,6 @@
         justify-content: space-between;
         align-items: center;
         padding: 1.5rem;
-        border-bottom: 1px solid #e0e0e0;
     }
 
     .modal-header h2 {
@@ -1378,7 +1366,6 @@
         justify-content: flex-end;
         gap: 1rem;
         padding: 1.5rem;
-        border-top: 1px solid #e0e0e0;
     }
 
     .modal-btn {

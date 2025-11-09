@@ -1,10 +1,15 @@
 <script lang="ts">
     import { page } from "$app/stores";
-    import { onMount } from "svelte";
-    import { readContract, writeContract, getAccount } from "@wagmi/core";
+    import { onMount, onDestroy } from "svelte";
+    import {
+        readContract,
+        writeContract,
+        getAccount,
+        watchAccount,
+    } from "@wagmi/core";
     import { formatUnits, parseUnits } from "viem";
     import EasyFaucetAbi from "$lib/abi/EasyFaucet.json";
-    import { wagmiAdapter } from "$lib/appkit";
+    import { wagmiAdapter, appKit } from "$lib/appkit";
 
     interface TokenInfo {
         address: string;
@@ -27,6 +32,8 @@
     // 预设数量
     const presetAmounts = [10, 100, 1000, 10000];
 
+    let unsubscribeAccount: (() => void) | undefined;
+
     onMount(() => {
         // 获取 URL 参数中的地址
         page.subscribe((p) => {
@@ -36,10 +43,43 @@
             }
         });
 
-        // 获取账户信息
+        // 获取初始账户信息
         if (wagmiAdapter && wagmiAdapter.wagmiConfig) {
             account = getAccount(wagmiAdapter.wagmiConfig);
             isConnected = account?.isConnected || false;
+
+            // 监听账户变化
+            unsubscribeAccount = watchAccount(wagmiAdapter.wagmiConfig, {
+                onChange(newAccount) {
+                    account = newAccount;
+                    isConnected = newAccount?.isConnected || false;
+                    console.log("账户状态变化:", {
+                        isConnected,
+                        address: newAccount?.address,
+                    });
+                },
+            });
+        }
+
+        // 监听 AppKit 状态变化
+        if (appKit) {
+            appKit.subscribeAccount((newAccount) => {
+                if (wagmiAdapter && wagmiAdapter.wagmiConfig) {
+                    account = getAccount(wagmiAdapter.wagmiConfig);
+                    isConnected = account?.isConnected || false;
+                    console.log("AppKit 账户变化:", {
+                        isConnected,
+                        address: account?.address,
+                    });
+                }
+            });
+        }
+    });
+
+    onDestroy(() => {
+        // 清理订阅
+        if (unsubscribeAccount) {
+            unsubscribeAccount();
         }
     });
 
@@ -93,8 +133,14 @@
         return formatUnits(balance, decimals);
     }
 
-    function isAmountAvailable(amount: number, balance: bigint): boolean {
-        return BigInt(amount) <= balance;
+    function isAmountAvailable(
+        amount: number,
+        balance: bigint,
+        decimals: number,
+    ): boolean {
+        // 将 amount 转换为 wei 单位再比较
+        const amountInWei = parseUnits(amount.toString(), decimals);
+        return amountInWei <= balance;
     }
 
     async function claimTokens(
@@ -241,8 +287,10 @@
                                 <h2 class="token-name">{token.name}</h2>
                                 <div class="token-address-row">
                                     <span class="token-address"
-                                        >{token.address.slice(0, 6)}...{token
-                                            .address.slice(-4)}</span
+                                        >{token.address.slice(
+                                            0,
+                                            6,
+                                        )}...{token.address.slice(-4)}</span
                                     >
                                     <button
                                         class="copy-btn copy-btn-small"
@@ -295,6 +343,7 @@
                                     {@const isAvailable = isAmountAvailable(
                                         amount,
                                         token.balance,
+                                        token.decimals,
                                     )}
                                     <button
                                         class="amount-btn"
@@ -309,8 +358,7 @@
                                             )}
                                     >
                                         {#if claimingToken === token.address}
-                                            <span class="spinner-small"
-                                            ></span>
+                                            <span class="spinner-small"></span>
                                         {:else}
                                             {amount}
                                         {/if}
