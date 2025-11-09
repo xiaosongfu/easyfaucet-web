@@ -1,0 +1,191 @@
+/* Global styles for Easy Faucet */
+
+/* Reset and base styles */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+    min-height: 100vh;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family:
+        system-ui,
+        -apple-system,
+        sans-serif;
+    background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+    overflow-x: hidden;
+    min-height: 100vh;
+}
+
+/* 确保没有默认的白色背景 */
+#root,
+#__next,
+#app {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+}
+
+/* 移除默认的边距和内边距 */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+ul,
+ol,
+li {
+    margin: 0;
+    padding: 0;
+}
+
+/* AppKit / Reown Wallet Button Customization */
+
+/* 覆盖所有 appkit 组件的主题变量 */
+appkit-button,
+w3m-button,
+w3m-connect-button,
+w3m-account-button,
+w3m-network-button,
+w3m-modal {
+    --w3m-accent: #667eea !important;
+    --w3m-color-mix: #764ba2 !important;
+    --w3m-color-mix-strength: 50 !important;
+    --w3m-border-radius-master: 12px !important;
+    --w3m-font-size-master: 14px !important;
+}
+
+/* 按钮样式覆盖 - 使用渐变背景 */
+appkit-button button,
+appkit-button > button,
+w3m-button button,
+w3m-connect-button button,
+w3m-account-button button,
+w3m-network-button button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 12px !important;
+    color: white !important;
+    font-weight: 600 !important;
+    padding: 0.65rem 1.25rem !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important;
+    font-size: 0.9rem !important;
+    cursor: pointer !important;
+    min-height: 44px !important;
+}
+
+/* 悬停效果 */
+appkit-button button:hover,
+appkit-button > button:hover,
+w3m-button button:hover,
+w3m-connect-button button:hover,
+w3m-account-button button:hover,
+w3m-network-button button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5) !important;
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+}
+
+/* 激活状态 */
+appkit-button button:active,
+w3m-button button:active,
+w3m-connect-button button:active,
+w3m-account-button button:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.4) !important;
+}
+
+/* 确保按钮内部元素颜色正确 */
+appkit-button *,
+w3m-button *,
+w3m-connect-button *,
+w3m-account-button *,
+w3m-network-button * {
+    color: white !important;
+}
+
+/* 移除可能存在的默认蓝色背景 */
+appkit-button,
+appkit-button > * {
+    background: transparent !important;
+}
+
+/* Modal 弹窗样式 */
+w3m-modal {
+    --w3m-background-color: #1a1a2e !important;
+    --w3m-accent: #667eea !important;
+}
+
+/* 连接的钱包按钮样式 */
+w3m-account-button button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+/* 网络切换按钮 */
+w3m-network-button button {
+    background: rgba(102, 126, 234, 0.2) !important;
+    border: 1px solid rgba(102, 126, 234, 0.5) !important;
+}
+
+w3m-network-button button:hover {
+    background: rgba(102, 126, 234, 0.3) !important;
+}
+
+/* 确保按钮文本可读 */
+appkit-button span,
+w3m-button span,
+w3m-connect-button span,
+w3m-account-button span {
+    color: white !important;
+    font-weight: 600 !important;
+}
+
+/* 按钮图标样式 */
+appkit-button svg,
+w3m-button svg,
+w3m-connect-button svg,
+w3m-account-button svg {
+    fill: white !important;
+    stroke: white !important;
+}
+
+/* 禁用状态 */
+appkit-button button:disabled,
+w3m-button button:disabled,
+w3m-connect-button button:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+}
+
+/* 移除默认的蓝色主题色 */
+[data-testid="connect-button"],
+[data-testid="account-button"] {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border-radius: 12px !important;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    appkit-button button,
+    w3m-button button,
+    w3m-connect-button button,
+    w3m-account-button button {
+        padding: 0.55rem 1rem !important;
+        font-size: 0.85rem !important;
+    }
+}

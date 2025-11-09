@@ -44,6 +44,12 @@
     let toastMessage = "";
     let showToast = false;
 
+    // 添加代币相关状态
+    let showAddTokenModal = false;
+    let addTokenAddress = "";
+    let addingTokenForFaucet: string | null = null;
+    let isAddingToken = false;
+
     onMount(() => {
         // 获取初始账户状态
         if (wagmiAdapter && wagmiAdapter.wagmiConfig) {
@@ -289,6 +295,73 @@
         }, 2000);
     }
 
+    function openAddTokenModal(faucetAddress: string) {
+        addingTokenForFaucet = faucetAddress;
+        addTokenAddress = "";
+        showAddTokenModal = true;
+    }
+
+    function closeAddTokenModal() {
+        showAddTokenModal = false;
+        addTokenAddress = "";
+        addingTokenForFaucet = null;
+    }
+
+    async function addToken() {
+        if (!addingTokenForFaucet) {
+            return;
+        }
+
+        if (!addTokenAddress || addTokenAddress.trim() === "") {
+            alert("请输入代币地址");
+            return;
+        }
+
+        // 验证地址格式
+        const addressRegex = /^0x[a-fA-F0-9]{40}$/;
+        if (!addressRegex.test(addTokenAddress)) {
+            alert("无效的地址格式");
+            return;
+        }
+
+        if (!account?.address) {
+            alert("请先连接钱包");
+            return;
+        }
+
+        if (!wagmiAdapter?.wagmiConfig) {
+            alert("Wagmi 配置未初始化");
+            return;
+        }
+
+        try {
+            isAddingToken = true;
+
+            const result = await writeContract(wagmiAdapter.wagmiConfig, {
+                address: addingTokenForFaucet as `0x${string}`,
+                abi: EasyFaucetAbi,
+                functionName: "addToken",
+                args: [addTokenAddress],
+            });
+
+            console.log("添加代币交易已提交:", result);
+            showToastMessage("代币添加交易已提交，请等待确认");
+
+            // 关闭弹窗
+            closeAddTokenModal();
+
+            // 延迟重新加载列表
+            setTimeout(() => {
+                loadUserFaucets();
+            }, 3000);
+        } catch (error) {
+            console.error("添加代币失败:", error);
+            alert("添加代币失败: " + (error as Error).message);
+        } finally {
+            isAddingToken = false;
+        }
+    }
+
     function addTokenInput() {
         tokenAddresses = [...tokenAddresses, ""];
     }
@@ -397,7 +470,7 @@
                         type="text"
                         placeholder="0x..."
                         value={address}
-                        on:input={(e) =>
+                        oninput={(e) =>
                             updateTokenAddress(
                                 index,
                                 (e.target as HTMLInputElement)?.value || "",
@@ -409,7 +482,7 @@
                     {#if tokenAddresses.length > 1}
                         <button
                             type="button"
-                            on:click={() => removeTokenInput(index)}
+                            onclick={() => removeTokenInput(index)}
                             class="remove-btn"
                             disabled={isCreating}
                         >
@@ -421,7 +494,7 @@
 
             <button
                 type="button"
-                on:click={addTokenInput}
+                onclick={addTokenInput}
                 class="add-btn"
                 disabled={isCreating}
             >
@@ -431,7 +504,7 @@
 
         <button
             class="create-btn"
-            on:click={newFaucet}
+            onclick={newFaucet}
             disabled={!isConnected || isCreating}
         >
             {isCreating ? "创建中..." : "创建 Faucet"}
@@ -444,7 +517,7 @@
             {#if isConnected}
                 <button
                     class="refresh-btn"
-                    on:click={loadUserFaucets}
+                    onclick={loadUserFaucets}
                     disabled={isLoadingFaucets}
                 >
                     {isLoadingFaucets ? "加载中..." : "刷新"}
@@ -481,7 +554,7 @@
                                 >
                                 <button
                                     class="copy-btn"
-                                    on:click={() =>
+                                    onclick={() =>
                                         copyToClipboard(
                                             faucet.address,
                                             "Faucet 地址",
@@ -541,7 +614,7 @@
                                             </span>
                                             <button
                                                 class="copy-btn copy-btn-small"
-                                                on:click={() =>
+                                                onclick={() =>
                                                     copyToClipboard(
                                                         token.address,
                                                         `${token.name} 地址`,
@@ -581,6 +654,28 @@
                             {/if}
                         </div>
                         <div class="faucet-actions">
+                            <button
+                                class="add-token-btn"
+                                onclick={() =>
+                                    openAddTokenModal(faucet.address)}
+                                title="添加代币"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                >
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                添加代币
+                            </button>
                             <a
                                 href={`/faucet/${faucet.address}`}
                                 class="view-btn"
@@ -603,35 +698,127 @@
             {toastMessage}
         </div>
     {/if}
+
+    <!-- 添加代币弹窗 -->
+    {#if showAddTokenModal}
+        <div
+            class="modal-overlay"
+            onclick={closeAddTokenModal}
+            onkeydown={(e) => e.key === "Escape" && closeAddTokenModal()}
+            role="button"
+            tabindex="0"
+            aria-label="关闭弹窗"
+        >
+            <div
+                class="modal-content"
+                onclick={(e) => e.stopPropagation()}
+                onkeydown={(e) => e.stopPropagation()}
+                role="dialog"
+                aria-labelledby="modal-title"
+                tabindex="-1"
+            >
+                <div class="modal-header">
+                    <h2 id="modal-title">添加代币</h2>
+                    <button
+                        class="modal-close"
+                        onclick={closeAddTokenModal}
+                        aria-label="关闭弹窗"
+                        title="关闭"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="token-address">ERC20 代币地址:</label>
+                        <input
+                            id="token-address"
+                            type="text"
+                            placeholder="0x..."
+                            bind:value={addTokenAddress}
+                            class="modal-input"
+                            disabled={isAddingToken}
+                        />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        class="modal-btn modal-btn-cancel"
+                        onclick={closeAddTokenModal}
+                        disabled={isAddingToken}
+                    >
+                        取消
+                    </button>
+                    <button
+                        class="modal-btn modal-btn-confirm"
+                        onclick={addToken}
+                        disabled={isAddingToken}
+                    >
+                        {isAddingToken ? "添加中..." : "确认添加"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    {/if}
 </div>
 
 <style>
     .dashboard-container {
-        max-width: 800px;
+        max-width: 1200px;
         margin: 0 auto;
         padding: 2rem;
         font-family:
             system-ui,
             -apple-system,
             sans-serif;
+        color: white;
+        min-height: 100vh;
     }
 
     h1 {
         text-align: center;
-        color: #333;
-        margin-bottom: 2rem;
+        font-size: 3rem;
+        font-weight: 900;
+        margin: 0 0 3rem 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
     }
 
     .create-faucet-section {
-        background: white;
-        padding: 2rem;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 2.5rem;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s ease;
+    }
+
+    .create-faucet-section:hover {
+        border-color: rgba(255, 255, 255, 0.2);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
     }
 
     h2 {
-        color: #333;
-        margin-bottom: 1.5rem;
+        color: white;
+        margin-bottom: 2rem;
+        font-size: 1.8rem;
+        font-weight: 700;
     }
 
     .form-group {
@@ -640,95 +827,131 @@
 
     label {
         display: block;
-        margin-bottom: 0.5rem;
-        font-weight: bold;
-        color: #555;
+        margin-bottom: 0.75rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1rem;
     }
 
     .name-input {
         width: 100%;
-        padding: 0.75rem;
-        border: 1px solid #ddd;
-        border-radius: 4px;
+        padding: 0.875rem 1rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
         font-size: 1rem;
         box-sizing: border-box;
+        color: white;
+        transition: all 0.2s;
     }
 
     .name-input:focus {
         outline: none;
-        border-color: #007bff;
-        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .name-input::placeholder {
+        color: rgba(255, 255, 255, 0.4);
     }
 
     .token-input-row {
         display: flex;
         align-items: center;
-        margin-bottom: 0.5rem;
-        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+        gap: 0.75rem;
     }
 
     .token-input {
         flex: 1;
-        padding: 0.75rem;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 0.9rem;
+        padding: 0.875rem 1rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        font-size: 0.95rem;
         font-family: monospace;
+        color: white;
+        transition: all 0.2s;
     }
 
     .token-input:focus {
         outline: none;
-        border-color: #007bff;
-        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .token-input::placeholder {
+        color: rgba(255, 255, 255, 0.4);
     }
 
     .remove-btn {
-        background: #dc3545;
+        background: rgba(220, 53, 69, 0.8);
         color: white;
-        border: none;
-        padding: 0.75rem 1rem;
-        border-radius: 4px;
+        border: 1px solid rgba(220, 53, 69, 0.5);
+        padding: 0.875rem 1.25rem;
+        border-radius: 12px;
         cursor: pointer;
         white-space: nowrap;
+        font-weight: 600;
+        transition: all 0.3s ease;
     }
 
     .remove-btn:hover {
-        background: #c82333;
+        background: #dc3545;
+        border-color: #dc3545;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
     }
 
     .add-btn {
-        background: #28a745;
+        background: rgba(40, 167, 69, 0.8);
         color: white;
-        border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 4px;
+        border: 1px solid rgba(40, 167, 69, 0.5);
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
         cursor: pointer;
         margin-top: 0.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
     }
 
     .add-btn:hover {
-        background: #218838;
+        background: #28a745;
+        border-color: #28a745;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
     }
 
     .create-btn {
-        background: #007bff;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border: none;
-        padding: 1rem 2rem;
-        border-radius: 4px;
+        padding: 1.25rem 2.5rem;
+        border-radius: 12px;
         cursor: pointer;
         font-size: 1.1rem;
-        font-weight: bold;
+        font-weight: 700;
         width: 100%;
+        transition: all 0.3s ease;
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
     }
 
     .create-btn:hover:not(:disabled) {
-        background: #0056b3;
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.6);
+    }
+
+    .create-btn:active:not(:disabled) {
+        transform: translateY(-1px);
     }
 
     .create-btn:disabled {
-        background: #6c757d;
+        background: rgba(108, 117, 125, 0.5);
         cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
     }
 
     button:disabled {
@@ -737,11 +960,19 @@
     }
 
     .faucet-list-section {
-        background: white;
-        padding: 2rem;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        margin-top: 2rem;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 2.5rem;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        margin-top: 3rem;
+        transition: all 0.3s ease;
+    }
+
+    .faucet-list-section:hover {
+        border-color: rgba(255, 255, 255, 0.2);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
     }
 
     .list-header {
@@ -753,28 +984,34 @@
 
     .list-header h2 {
         margin: 0;
+        color: white;
     }
 
     .refresh-btn {
-        background: #6c757d;
+        background: rgba(108, 117, 125, 0.6);
         color: white;
-        border: none;
-        padding: 0.5rem 1rem;
-        border-radius: 4px;
+        border: 1px solid rgba(108, 117, 125, 0.5);
+        padding: 0.65rem 1.25rem;
+        border-radius: 12px;
         cursor: pointer;
         font-size: 0.9rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
     }
 
     .refresh-btn:hover:not(:disabled) {
-        background: #5a6268;
+        background: #6c757d;
+        border-color: #6c757d;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
     }
 
     .empty-message,
     .loading-message {
         text-align: center;
-        color: #6c757d;
-        padding: 2rem;
-        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.6);
+        padding: 3rem;
+        font-size: 1.1rem;
     }
 
     .loading-container {
@@ -795,9 +1032,9 @@
 
     .block-range-info {
         text-align: center;
-        color: #999;
+        color: rgba(255, 255, 255, 0.5);
         font-size: 0.85rem;
-        margin-top: 1rem;
+        margin-top: 1.5rem;
         font-style: italic;
     }
 
@@ -811,15 +1048,18 @@
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        padding: 1.5rem;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        background: #f9f9f9;
-        transition: box-shadow 0.2s;
+        padding: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.03);
+        transition: all 0.3s ease;
     }
 
     .faucet-item:hover {
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-color: rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.06);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        transform: translateY(-2px);
     }
 
     .faucet-info {
@@ -827,22 +1067,23 @@
     }
 
     .faucet-info h3 {
-        margin: 0 0 0.5rem 0;
-        color: #333;
-        font-size: 1.2rem;
+        margin: 0 0 0.75rem 0;
+        color: white;
+        font-size: 1.5rem;
+        font-weight: 700;
     }
 
     .faucet-address {
-        margin: 0.5rem 0 0 0;
-        color: #666;
+        margin: 0.75rem 0;
+        color: rgba(255, 255, 255, 0.7);
         font-size: 0.9rem;
         word-break: break-all;
     }
 
     .address-text {
         font-family: monospace;
-        font-size: 0.85rem;
-        color: #007bff;
+        font-size: 0.9rem;
+        color: #667eea;
     }
 
     .copy-btn {
@@ -906,70 +1147,275 @@
 
     .token-loading,
     .no-tokens {
-        margin-top: 0.75rem;
-        color: #999;
-        font-size: 0.9rem;
+        margin-top: 1rem;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 0.95rem;
         font-style: italic;
     }
 
     .token-list {
-        margin-top: 1rem;
-        padding-top: 0.75rem;
-        border-top: 1px solid #ddd;
+        margin-top: 1.25rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
     }
 
     .token-list-title {
-        margin: 0 0 0.5rem 0;
-        color: #555;
-        font-size: 0.9rem;
+        margin: 0 0 0.75rem 0;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 0.95rem;
+        font-weight: 600;
     }
 
     .token-item {
         display: flex;
         align-items: center;
         gap: 1rem;
-        padding: 0.5rem 0;
-        font-size: 0.85rem;
-        color: #666;
+        padding: 0.75rem;
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s;
+    }
+
+    .token-item:hover {
+        background: rgba(255, 255, 255, 0.05);
     }
 
     .token-name {
-        font-weight: 600;
-        color: #333;
+        font-weight: 700;
+        color: white;
         min-width: 80px;
     }
 
     .token-balance {
-        color: #28a745;
+        color: #4ade80;
         font-family: monospace;
         flex: 1;
+        font-weight: 600;
     }
 
     .token-address-short {
         font-family: monospace;
-        color: #999;
-        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 0.85rem;
     }
 
     .faucet-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
         margin-left: 1rem;
         align-self: center;
     }
 
+    .add-token-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        background: rgba(40, 167, 69, 0.8);
+        color: white;
+        border: 1px solid rgba(40, 167, 69, 0.5);
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    }
+
+    .add-token-btn:hover {
+        background: #28a745;
+        border-color: #28a745;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(40, 167, 69, 0.5);
+    }
+
+    .add-token-btn svg {
+        flex-shrink: 0;
+    }
+
     .view-btn {
         display: inline-block;
-        background: #007bff;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border: none;
         padding: 0.75rem 1.5rem;
-        border-radius: 4px;
+        border-radius: 12px;
         cursor: pointer;
         text-decoration: none;
         font-size: 0.9rem;
-        transition: background 0.2s;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
 
     .view-btn:hover {
-        background: #0056b3;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+    }
+
+    /* Modal 样式 */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        backdrop-filter: blur(4px);
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    .modal-content {
+        background: #1a1a2e;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes slideUp {
+        from {
+            transform: translateY(20px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        color: white;
+        font-weight: 700;
+    }
+
+    .modal-close {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        cursor: pointer;
+        color: rgba(255, 255, 255, 0.8);
+        padding: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+    .modal-close:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-input {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        font-size: 1rem;
+        font-family: monospace;
+        box-sizing: border-box;
+        color: white;
+        transition: all 0.2s;
+    }
+
+    .modal-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .modal-input::placeholder {
+        color: rgba(255, 255, 255, 0.4);
+    }
+
+    .modal-input:disabled {
+        background: rgba(255, 255, 255, 0.02);
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        padding: 1.5rem;
+        border-top: 1px solid #e0e0e0;
+    }
+
+    .modal-btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .modal-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .modal-btn-cancel {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+    }
+
+    .modal-btn-cancel:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .modal-btn-confirm {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .modal-btn-confirm:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
     }
 </style>
