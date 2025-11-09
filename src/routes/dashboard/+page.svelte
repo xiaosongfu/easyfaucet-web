@@ -28,6 +28,7 @@
         address: string;
         owner: string;
         blockNumber: bigint;
+        timestamp: number;
         tokens: TokenInfo[];
         isLoadingTokens: boolean;
     }
@@ -185,20 +186,44 @@
             }
 
             loadingProgress = "解析数据...";
-            // 解析事件数据
-            userFaucets = allLogs.map((log) => {
-                return {
-                    owner: log.args.owner as string,
-                    name: log.args.name as string,
-                    address: log.args.faucet as string,
-                    blockNumber: log.blockNumber,
-                    tokens: [],
-                    isLoadingTokens: false,
-                };
-            });
+            // 解析事件数据并获取时间戳
+            const logsWithTimestamp = await Promise.all(
+                allLogs.map(async (log) => {
+                    try {
+                        const block = await publicClient.getBlock({
+                            blockNumber: log.blockNumber,
+                        });
+                        return {
+                            owner: log.args.owner as string,
+                            name: log.args.name as string,
+                            address: log.args.faucet as string,
+                            blockNumber: log.blockNumber,
+                            timestamp: Number(block.timestamp),
+                            tokens: [],
+                            isLoadingTokens: false,
+                        };
+                    } catch (error) {
+                        console.error(
+                            `获取区块 ${log.blockNumber} 时间戳失败:`,
+                            error,
+                        );
+                        return {
+                            owner: log.args.owner as string,
+                            name: log.args.name as string,
+                            address: log.args.faucet as string,
+                            blockNumber: log.blockNumber,
+                            timestamp: 0,
+                            tokens: [],
+                            isLoadingTokens: false,
+                        };
+                    }
+                }),
+            );
 
-            // 按区块号降序排序（最新的在前）
-            userFaucets.sort((a, b) => Number(b.blockNumber - a.blockNumber));
+            userFaucets = logsWithTimestamp;
+
+            // 按时间戳降序排序（最新的在前）
+            userFaucets.sort((a, b) => b.timestamp - a.timestamp);
 
             console.log("加载到的 Faucet 列表:", userFaucets);
 
@@ -293,6 +318,33 @@
         setTimeout(() => {
             showToast = false;
         }, 2000);
+    }
+
+    function formatDate(timestamp: number): string {
+        if (!timestamp) return "未知";
+        const date = new Date(timestamp * 1000);
+        return date.toLocaleString("zh-CN", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    }
+
+    function formatRelativeTime(timestamp: number): string {
+        if (!timestamp) return "未知";
+        const now = Date.now();
+        const diff = now - timestamp * 1000;
+        const seconds = Math.floor(diff / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+
+        if (days > 0) return `${days} 天前`;
+        if (hours > 0) return `${hours} 小时前`;
+        if (minutes > 0) return `${minutes} 分钟前`;
+        return "刚刚";
     }
 
     function openAddTokenModal(faucetAddress: string) {
@@ -546,7 +598,7 @@
                         <div class="faucet-info">
                             <h3>{faucet.name}</h3>
                             <p class="faucet-address">
-                                <strong>地址:</strong>
+                                <span class="address-label">地址:</span>
                                 <span class="address-text"
                                     >{faucet.address}</span
                                 >
@@ -584,6 +636,15 @@
                                         ></path>
                                     </svg>
                                 </button>
+                            </p>
+                            <p class="faucet-time">
+                                <span class="time-label">创建时间:</span>
+                                <span
+                                    class="time-text"
+                                    title={formatDate(faucet.timestamp)}
+                                >
+                                    {formatRelativeTime(faucet.timestamp)}
+                                </span>
                             </p>
 
                             {#if faucet.isLoadingTokens}
@@ -1063,10 +1124,29 @@
     }
 
     .faucet-address {
-        margin: 0.75rem 0;
+        margin: 0.75rem 0 0.5rem 0;
         color: rgba(255, 255, 255, 0.7);
         font-size: 0.9rem;
         word-break: break-all;
+    }
+
+    .faucet-time {
+        margin: 0.5rem 0 0.75rem 0;
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .time-label {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .time-text {
+        color: rgba(255, 255, 255, 0.7);
+        font-style: italic;
+        cursor: help;
     }
 
     .address-text {
