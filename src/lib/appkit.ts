@@ -36,12 +36,6 @@ if (browser) {
       icons: ["https://avatars.githubusercontent.com/u/179229932?s=200&v=4"],
     },
     themeMode: "dark",
-    themeVariables: {
-      "--w3m-accent": "#667eea",
-      "--w3m-border-radius-master": "12px",
-      "--w3m-font-size-master": "14px",
-    },
-    featuredWalletIds: [],
   });
 }
 

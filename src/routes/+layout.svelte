@@ -2,9 +2,13 @@
     import "$lib/appkit";
     import "../styles/global.css";
     import favicon from "$lib/assets/favicon.svg";
+    import { onMount } from "svelte";
+    import { appKit } from "$lib/appkit";
 
     let { children } = $props();
     let isMenuOpen = $state(false);
+    let isConnected = $state(false);
+    let address = $state("");
 
     function toggleMenu() {
         isMenuOpen = !isMenuOpen;
@@ -13,6 +17,27 @@
     function closeMenu() {
         isMenuOpen = false;
     }
+
+    function formatAddress(addr: string) {
+        if (!addr) return "";
+        return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+    }
+
+    async function connectWallet() {
+        if (appKit) {
+            await appKit.open();
+        }
+    }
+
+    onMount(() => {
+        // 监听钱包连接状态
+        if (appKit) {
+            appKit.subscribeAccount((account) => {
+                isConnected = account?.isConnected || false;
+                address = account?.address || "";
+            });
+        }
+    });
 </script>
 
 <svelte:head>
@@ -37,9 +62,55 @@
 
             <!-- Wallet Button & Mobile Menu Toggle -->
             <div class="nav-actions">
-                <div class="wallet-button">
-                    <appkit-button></appkit-button>
-                </div>
+                <button class="wallet-button" onclick={connectWallet}>
+                    {#if isConnected && address}
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <rect
+                                x="1"
+                                y="4"
+                                width="22"
+                                height="16"
+                                rx="2"
+                                ry="2"
+                            ></rect>
+                            <line x1="1" y1="10" x2="23" y2="10"></line>
+                        </svg>
+                        <span>{formatAddress(address)}</span>
+                    {:else}
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <rect
+                                x="1"
+                                y="4"
+                                width="22"
+                                height="16"
+                                rx="2"
+                                ry="2"
+                            ></rect>
+                            <line x1="1" y1="10" x2="23" y2="10"></line>
+                        </svg>
+                        <span>Connect Wallet</span>
+                    {/if}
+                </button>
                 <button
                     class="menu-toggle"
                     onclick={toggleMenu}
@@ -240,70 +311,63 @@
     }
 
     .wallet-button {
-        display: flex;
+        display: inline-flex;
         align-items: center;
+        gap: 0.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 16px;
+        padding: 0.7rem 1.5rem;
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        position: relative;
+        overflow: hidden;
     }
 
-    /* Style the appkit-button - 全局样式覆盖 */
-    :global(appkit-button) {
-        /* 覆盖默认颜色变量 */
-        --w3m-accent: #667eea !important;
-        --w3m-color-mix: #764ba2 !important;
-        --w3m-color-mix-strength: 50% !important;
-    }
-
-    /* 覆盖所有 Reown/WalletConnect 按钮样式 */
-    :global(w3m-button),
-    :global(w3m-connect-button),
-    :global(w3m-account-button),
-    :global(w3m-network-button),
-    :global(appkit-button button),
-    :global(appkit-button > button),
-    :global(appkit-button [role="button"]) {
+    .wallet-button::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
         background: linear-gradient(
-            135deg,
-            #667eea 0%,
-            #764ba2 100%
-        ) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        border-radius: 12px !important;
-        color: white !important;
-        font-weight: 600 !important;
-        padding: 0.65rem 1.25rem !important;
-        transition: all 0.3s ease !important;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important;
-        font-size: 0.9rem !important;
-        cursor: pointer !important;
+            90deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.2) 50%,
+            rgba(255, 255, 255, 0) 100%
+        );
+        transition: left 0.6s ease;
     }
 
-    :global(w3m-button:hover),
-    :global(w3m-connect-button:hover),
-    :global(w3m-account-button:hover),
-    :global(w3m-network-button:hover),
-    :global(appkit-button button:hover),
-    :global(appkit-button > button:hover),
-    :global(appkit-button [role="button"]:hover) {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5) !important;
-        background: linear-gradient(
-            135deg,
-            #764ba2 0%,
-            #667eea 100%
-        ) !important;
+    .wallet-button:hover {
+        transform: translateY(-2px) scale(1.02);
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+        border-color: rgba(255, 255, 255, 0.3);
     }
 
-    /* 覆盖按钮内部文本和图标颜色 */
-    :global(appkit-button *),
-    :global(w3m-button *),
-    :global(w3m-connect-button *),
-    :global(w3m-account-button *) {
-        color: white !important;
+    .wallet-button:hover::before {
+        left: 100%;
     }
 
-    /* 移除默认的蓝色背景 */
-    :global(appkit-button),
-    :global(appkit-button *[style*="background"]) {
-        background: transparent !important;
+    .wallet-button:active {
+        transform: translateY(0) scale(0.98);
+        box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+    }
+
+    .wallet-button svg {
+        flex-shrink: 0;
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+    }
+
+    .wallet-button span {
+        font-weight: 600;
+        letter-spacing: 0.02em;
     }
 
     .menu-toggle {
@@ -408,6 +472,12 @@
 
         .logo-text {
             font-size: 1.2rem;
+        }
+
+        .wallet-button {
+            padding: 0.6rem 1.2rem;
+            font-size: 0.85rem;
+            border-radius: 14px;
         }
     }
 
