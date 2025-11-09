@@ -16,6 +16,8 @@
         type ChainConfig,
     } from "$lib/contracts";
     import { appKit, wagmiAdapter } from "$lib/appkit";
+    import { _, locale } from "svelte-i18n";
+    import { get } from "svelte/store";
 
     interface TokenInfo {
         address: string;
@@ -139,7 +141,9 @@
 
         try {
             isLoadingFaucets = true;
-            loadingProgress = "正在连接...";
+            loadingProgress = get(_)(
+                "dashboard.loadingProgress.queryingEvents",
+            );
             const publicClient = getPublicClient(wagmiAdapter.wagmiConfig);
 
             if (!publicClient) {
@@ -147,7 +151,9 @@
             }
 
             // 获取最新区块号
-            loadingProgress = "获取区块信息...";
+            loadingProgress = get(_)(
+                "dashboard.loadingProgress.gettingTimestamps",
+            );
             const latestBlock = await publicClient.getBlockNumber();
 
             // 合约部署的起始区块
@@ -173,7 +179,7 @@
 
             while (fromBlock <= latestBlock) {
                 try {
-                    loadingProgress = `查询事件日志 (${batchCount + 1}/${totalBatches})`;
+                    loadingProgress = `${get(_)("dashboard.loadingProgress.queryingEvents")} (${batchCount + 1}/${totalBatches})`;
                     const logs = await publicClient.getLogs({
                         address: currentChainConfig.factoryAddress,
                         event: {
@@ -241,11 +247,13 @@
             if (allLogs.length === 0) {
                 userFaucets = [];
                 loadingProgress = "";
-                queriedBlockRange = `已查询区块: ${CONTRACT_DEPLOY_BLOCK} - ${latestBlock}`;
+                queriedBlockRange = `${get(_)("dashboard.faucetList.queriedBlocks")}: ${CONTRACT_DEPLOY_BLOCK} - ${latestBlock}`;
                 return;
             }
 
-            loadingProgress = "获取区块时间戳...";
+            loadingProgress = get(_)(
+                "dashboard.loadingProgress.gettingTimestamps",
+            );
 
             // 收集所有唯一的区块号
             const uniqueBlockNumbers = [
@@ -271,7 +279,7 @@
                 }),
             );
 
-            loadingProgress = "解析 Faucet 数据...";
+            loadingProgress = get(_)("dashboard.loadingProgress.parsingData");
 
             // 解析事件数据并添加时间戳（不触发响应式更新）
             const faucetsData: FaucetInfo[] = allLogs.map((log) => ({
@@ -290,7 +298,7 @@
 
             console.log("加载到的 Faucet 列表:", faucetsData);
 
-            loadingProgress = "加载代币信息...";
+            loadingProgress = get(_)("dashboard.loadingProgress.loadingTokens");
 
             // 批量加载所有代币信息（不触发中间更新）
             await Promise.all(
@@ -347,13 +355,14 @@
         return formatUnits(balance, decimals);
     }
 
-    async function copyToClipboard(text: string, label: string = "地址") {
+    async function copyToClipboard(text: string, label: string = "") {
         try {
             await navigator.clipboard.writeText(text);
-            showToastMessage(`${label}已复制`);
+            const message = label || get(_)("dashboard.messages.addressCopied");
+            showToastMessage(message);
         } catch (error) {
             console.error("复制失败:", error);
-            showToastMessage("复制失败", true);
+            showToastMessage(get(_)("dashboard.messages.copyError"), true);
         }
     }
 
@@ -361,10 +370,10 @@
         try {
             const url = `${window.location.origin}/faucet/${faucet.chainId}/${faucet.address}`;
             await navigator.clipboard.writeText(url);
-            showToastMessage("Faucet 链接已复制");
+            showToastMessage(get(_)("dashboard.messages.shareSuccess"));
         } catch (error) {
             console.error("分享失败:", error);
-            showToastMessage("分享失败", true);
+            showToastMessage(get(_)("dashboard.messages.shareError"), true);
         }
     }
 
@@ -378,9 +387,11 @@
     }
 
     function formatDate(timestamp: number): string {
-        if (!timestamp) return "未知";
+        if (!timestamp) return get(_)("dashboard.time.unknown");
         const date = new Date(timestamp * 1000);
-        return date.toLocaleString("zh-CN", {
+        const currentLocale = get(locale) || "zh";
+        const localeCode = currentLocale === "zh" ? "zh-CN" : "en-US";
+        return date.toLocaleString(localeCode, {
             year: "numeric",
             month: "2-digit",
             day: "2-digit",
@@ -390,7 +401,7 @@
     }
 
     function formatRelativeTime(timestamp: number): string {
-        if (!timestamp) return "未知";
+        if (!timestamp) return get(_)("dashboard.time.unknown");
         const now = Date.now();
         const diff = now - timestamp * 1000;
         const seconds = Math.floor(diff / 1000);
@@ -398,10 +409,11 @@
         const hours = Math.floor(minutes / 60);
         const days = Math.floor(hours / 24);
 
-        if (days > 0) return `${days} 天前`;
-        if (hours > 0) return `${hours} 小时前`;
-        if (minutes > 0) return `${minutes} 分钟前`;
-        return "刚刚";
+        if (days > 0) return `${days} ${get(_)("dashboard.time.daysAgo")}`;
+        if (hours > 0) return `${hours} ${get(_)("dashboard.time.hoursAgo")}`;
+        if (minutes > 0)
+            return `${minutes} ${get(_)("dashboard.time.minutesAgo")}`;
+        return get(_)("dashboard.time.justNow");
     }
 
     function openAddTokenModal(faucetAddress: string) {
@@ -422,19 +434,19 @@
         }
 
         if (!addTokenAddress || addTokenAddress.trim() === "") {
-            alert("请输入代币地址");
+            alert(get(_)("dashboard.messages.enterAddress"));
             return;
         }
 
         // 验证地址格式
         const addressRegex = /^0x[a-fA-F0-9]{40}$/;
         if (!addressRegex.test(addTokenAddress)) {
-            alert("无效的地址格式");
+            alert(get(_)("dashboard.messages.invalidAddress"));
             return;
         }
 
         if (!account?.address) {
-            alert("请先连接钱包");
+            alert(get(_)("dashboard.messages.connectWallet"));
             return;
         }
 
@@ -454,7 +466,7 @@
             });
 
             console.log("添加代币交易已提交:", result);
-            showToastMessage("代币添加交易已提交，请等待确认");
+            showToastMessage(get(_)("dashboard.messages.addTokenSuccess"));
 
             // 关闭弹窗
             closeAddTokenModal();
@@ -465,7 +477,11 @@
             }, 3000);
         } catch (error) {
             console.error("添加代币失败:", error);
-            alert("添加代币失败: " + (error as Error).message);
+            alert(
+                get(_)("dashboard.messages.addTokenError") +
+                    ": " +
+                    (error as Error).message,
+            );
         } finally {
             isAddingToken = false;
         }
@@ -488,12 +504,12 @@
 
     async function newFaucet() {
         if (!isConnected || !account?.address) {
-            alert("请先连接钱包");
+            alert($_("dashboard.messages.connectWallet"));
             return;
         }
 
         if (faucetName.trim() === "") {
-            alert("请输入 Faucet 名称");
+            alert($_("dashboard.messages.enterName"));
             return;
         }
 
@@ -501,7 +517,7 @@
         const validTokens = tokenAddresses.filter((addr) => addr.trim() !== "");
 
         if (validTokens.length === 0) {
-            alert("请至少输入一个代币地址");
+            alert($_("dashboard.messages.atLeastOneToken"));
             return;
         }
 
@@ -509,7 +525,7 @@
         const addressRegex = /^0x[a-fA-F0-9]{40}$/;
         for (const token of validTokens) {
             if (!addressRegex.test(token)) {
-                alert(`无效的地址格式: ${token}`);
+                alert(`${$_("dashboard.messages.invalidAddress")}: ${token}`);
                 return;
             }
         }
@@ -534,7 +550,7 @@
             });
 
             console.log("交易提交成功:", result);
-            alert("Faucet 创建交易已提交，请等待确认");
+            alert($_("dashboard.messages.createSuccess"));
 
             // 重置表单
             faucetName = "";
@@ -546,7 +562,11 @@
             }, 3000);
         } catch (error) {
             console.error("创建 Faucet 失败:", error);
-            alert("创建 Faucet 失败: " + (error as Error).message);
+            alert(
+                $_("dashboard.messages.createError") +
+                    ": " +
+                    (error as Error).message,
+            );
         } finally {
             isCreating = false;
         }
@@ -557,11 +577,11 @@
     <!-- 不支持的链提示 -->
     {#if isUnsupportedChain}
         <div class="unsupported-chain-warning">
-            <h2>⚠️ 不支持的网络</h2>
-            <p>当前连接的网络不被支持。请切换到以下网络之一：</p>
+            <h2>⚠️ {$_("dashboard.unsupportedChain.title")}</h2>
+            <p>{$_("dashboard.unsupportedChain.description")}</p>
             <ul>
-                <li>BSC Testnet</li>
-                <li>Ethereum Sepolia</li>
+                <li>{$_("dashboard.unsupportedChain.bscTestnet")}</li>
+                <li>{$_("dashboard.unsupportedChain.sepolia")}</li>
             </ul>
         </div>
     {:else if currentChainId}
@@ -573,22 +593,24 @@
     {/if}
 
     <div class="create-faucet-section">
-        <h2>创建新的 Faucet</h2>
+        <h2>{$_("dashboard.createFaucet.title")}</h2>
 
         <div class="form-group">
-            <label for="faucet-name">Faucet 名称:</label>
+            <label for="faucet-name">{$_("dashboard.createFaucet.name")}</label>
             <input
                 type="text"
                 id="faucet-name"
-                placeholder="请输入 Faucet 名称"
-                bind:value={faucetName}
                 class="name-input"
-                disabled={isCreating}
+                bind:value={faucetName}
+                placeholder={$_("dashboard.createFaucet.namePlaceholder")}
+                disabled={!isConnected || isUnsupportedChain}
             />
         </div>
 
         <div class="form-group">
-            <label for="token-addresses">代币地址:</label>
+            <label for="token-addresses"
+                >{$_("dashboard.createFaucet.tokenAddresses")}</label
+            >
             {#each tokenAddresses as address, index}
                 <div class="token-input-row">
                     <input
@@ -607,11 +629,11 @@
                     {#if tokenAddresses.length > 1}
                         <button
                             type="button"
-                            onclick={() => removeTokenInput(index)}
                             class="remove-btn"
+                            onclick={() => removeTokenInput(index)}
                             disabled={isCreating}
                         >
-                            移除
+                            {$_("dashboard.createFaucet.remove")}
                         </button>
                     {/if}
                 </div>
@@ -623,45 +645,51 @@
                 class="add-btn"
                 disabled={isCreating}
             >
-                + 添加代币地址
+                {$_("dashboard.createFaucet.addToken")}
             </button>
         </div>
 
         <button
             class="create-btn"
             onclick={newFaucet}
-            disabled={!isConnected || isCreating}
+            disabled={isCreating || !isConnected || isUnsupportedChain}
         >
-            {isCreating ? "创建中..." : "创建 Faucet"}
+            {isCreating
+                ? $_("dashboard.createFaucet.creating")
+                : $_("dashboard.createFaucet.create")}
         </button>
     </div>
 
     <div class="faucet-list-section">
         <div class="list-header">
-            <h2>我的 Faucet 列表</h2>
+            <h2>{$_("dashboard.faucetList.title")}</h2>
             {#if isConnected}
                 <button
                     class="refresh-btn"
                     onclick={loadUserFaucets}
-                    disabled={isLoadingFaucets}
+                    disabled={isLoadingFaucets || isUnsupportedChain}
                 >
-                    {isLoadingFaucets ? "加载中..." : "刷新"}
+                    {$_("dashboard.faucetList.refresh")}
                 </button>
             {/if}
         </div>
 
         {#if !isConnected}
-            <p class="empty-message">请先连接钱包查看您的 Faucet 列表</p>
+            <p class="empty-message">
+                {$_("dashboard.faucetList.connectPrompt")}
+            </p>
         {:else if isLoadingFaucets}
             <div class="loading-container">
-                <p class="loading-message">加载中...</p>
+                <p class="loading-message">
+                    {$_("dashboard.faucetList.loading")}
+                </p>
                 {#if loadingProgress}
                     <p class="loading-progress">{loadingProgress}</p>
                 {/if}
             </div>
         {:else if userFaucets.length === 0}
             <div class="empty-container">
-                <p class="empty-message">您还没有创建任何 Faucet</p>
+                <p class="empty-message">{$_("dashboard.faucetList.empty")}</p>
                 {#if queriedBlockRange}
                     <p class="block-range-info">{queriedBlockRange}</p>
                 {/if}
@@ -673,7 +701,9 @@
                         <div class="faucet-info">
                             <h3>{faucet.name}</h3>
                             <p class="faucet-address">
-                                <span class="address-label">地址:</span>
+                                <span class="address-label"
+                                    >{$_("dashboard.faucetList.address")}:</span
+                                >
                                 <span class="address-text"
                                     >{faucet.address}</span
                                 >
@@ -713,7 +743,11 @@
                                 </button>
                             </p>
                             <p class="faucet-time">
-                                <span class="time-label">创建时间:</span>
+                                <span class="time-label"
+                                    >{$_(
+                                        "dashboard.faucetList.createdTime",
+                                    )}:</span
+                                >
                                 <span
                                     class="time-text"
                                     title={formatDate(faucet.timestamp)}
@@ -723,11 +757,17 @@
                             </p>
 
                             {#if faucet.isLoadingTokens}
-                                <p class="token-loading">加载代币信息中...</p>
+                                <p class="token-loading">
+                                    {$_("dashboard.faucetList.loadingTokens")}
+                                </p>
                             {:else if faucet.tokens.length > 0}
                                 <div class="token-list">
                                     <p class="token-list-title">
-                                        <strong>代币列表:</strong>
+                                        <strong
+                                            >{$_(
+                                                "dashboard.faucetList.tokenList",
+                                            )}:</strong
+                                        >
                                     </p>
                                     {#each faucet.tokens as token}
                                         <div class="token-item">
@@ -735,7 +775,9 @@
                                                 >{token.name}</span
                                             >
                                             <span class="token-balance">
-                                                余额: {formatBalance(
+                                                {$_(
+                                                    "dashboard.faucetList.balance",
+                                                )}: {formatBalance(
                                                     token.balance,
                                                     token.decimals,
                                                 )}
@@ -784,7 +826,9 @@
                                     {/each}
                                 </div>
                             {:else}
-                                <p class="no-tokens">暂无代币</p>
+                                <p class="no-tokens">
+                                    {$_("dashboard.faucetList.noTokens")}
+                                </p>
                             {/if}
                         </div>
                         <div class="faucet-actions">
@@ -792,7 +836,6 @@
                                 class="add-token-btn"
                                 onclick={() =>
                                     openAddTokenModal(faucet.address)}
-                                title="添加代币"
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -808,12 +851,11 @@
                                     <line x1="12" y1="5" x2="12" y2="19"></line>
                                     <line x1="5" y1="12" x2="19" y2="12"></line>
                                 </svg>
-                                添加代币
+                                {$_("dashboard.faucetList.addToken")}
                             </button>
                             <button
                                 class="share-faucet-btn"
                                 onclick={() => shareFaucet(faucet)}
-                                title="分享 Faucet"
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -842,7 +884,7 @@
                                         y2="10.49"
                                     ></line>
                                 </svg>
-                                分享
+                                {$_("dashboard.faucetList.share")}
                             </button>
                             <a
                                 href={`/faucet/${faucet.chainId}/${faucet.address}`}
@@ -888,7 +930,9 @@
                 tabindex="-1"
             >
                 <div class="modal-header">
-                    <h2 id="modal-title">添加代币</h2>
+                    <h2 id="modal-title">
+                        {$_("dashboard.addTokenModal.title")}
+                    </h2>
                     <button
                         class="modal-close"
                         onclick={closeAddTokenModal}
@@ -913,12 +957,16 @@
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="token-address">ERC20 代币地址:</label>
+                        <label for="token-address"
+                            >{$_("dashboard.addTokenModal.label")}:</label
+                        >
                         <input
-                            id="token-address"
                             type="text"
-                            placeholder="0x..."
+                            id="token-address"
                             bind:value={addTokenAddress}
+                            placeholder={$_(
+                                "dashboard.addTokenModal.placeholder",
+                            )}
                             class="modal-input"
                             disabled={isAddingToken}
                         />
@@ -930,14 +978,16 @@
                         onclick={closeAddTokenModal}
                         disabled={isAddingToken}
                     >
-                        取消
+                        {$_("dashboard.addTokenModal.cancel")}
                     </button>
                     <button
                         class="modal-btn modal-btn-confirm"
                         onclick={addToken}
                         disabled={isAddingToken}
                     >
-                        {isAddingToken ? "添加中..." : "确认添加"}
+                        {isAddingToken
+                            ? $_("dashboard.addTokenModal.confirming")
+                            : $_("dashboard.addTokenModal.confirm")}
                     </button>
                 </div>
             </div>

@@ -1,0 +1,192 @@
+{
+  "nav": {
+    "home": "首页",
+    "dashboard": "控制台",
+    "connectWallet": "连接钱包"
+  },
+  "home": {
+    "badge": "Web3 代币水龙头平台",
+    "title": "Easy Faucet",
+    "subtitle": "创建属于您自己的代币水龙头\n让 Web3 测试代币分发变得简单高效",
+    "getStarted": "开始创建",
+    "learnMore": "了解更多",
+    "stats": {
+      "faucetsCreated": "Faucets 创建",
+      "tokensDistributed": "代币分发",
+      "activeUsers": "活跃用户"
+    },
+    "features": {
+      "title": "强大功能",
+      "subtitle": "一站式解决方案，让代币分发变得轻而易举",
+      "createFaucet": {
+        "title": "创建 Faucet",
+        "description": "轻松创建您自己的代币水龙头，无需编写代码"
+      },
+      "multiToken": {
+        "title": "多币种支持",
+        "description": "支持添加任意 ERC20 代币，灵活管理您的资产"
+      },
+      "quickClaim": {
+        "title": "快速领取",
+        "description": "用户可以快速便捷地领取测试代币"
+      },
+      "secure": {
+        "title": "安全可靠",
+        "description": "基于智能合约，透明且安全的代币分发机制"
+      }
+    },
+    "howItWorks": {
+      "title": "如何使用",
+      "subtitle": "三步轻松创建您的代币水龙头",
+      "step1": {
+        "title": "连接钱包",
+        "description": "使用您的 Web3 钱包连接到平台"
+      },
+      "step2": {
+        "title": "创建 Faucet",
+        "description": "输入名称并添加您想要分发的 ERC20 代币"
+      },
+      "step3": {
+        "title": "开始分发",
+        "description": "分享您的 Faucet 链接，让用户轻松领取代币"
+      }
+    },
+    "cta": {
+      "title": "准备好了吗？",
+      "subtitle": "立即开始创建您的第一个代币水龙头",
+      "button": "立即开始"
+    }
+  },
+  "dashboard": {
+    "unsupportedChain": {
+      "title": "不支持的网络",
+      "description": "当前连接的网络不被支持。请切换到以下网络之一：",
+      "bscTestnet": "BSC Testnet",
+      "sepolia": "Ethereum Sepolia"
+    },
+    "createFaucet": {
+      "title": "创建新的 Faucet",
+      "name": "Faucet 名称",
+      "namePlaceholder": "请输入 Faucet 名称",
+      "tokenAddresses": "代币地址",
+      "tokenPlaceholder": "0x...",
+      "addToken": "添加代币地址",
+      "remove": "移除",
+      "create": "创建 Faucet",
+      "creating": "创建中..."
+    },
+    "faucetList": {
+      "title": "我的 Faucet 列表",
+      "refresh": "刷新",
+      "loading": "加载中...",
+      "empty": "您还没有创建任何 Faucet",
+      "connectPrompt": "请先连接钱包查看您的 Faucet 列表",
+      "address": "地址",
+      "createdTime": "创建时间",
+      "tokenList": "代币列表",
+      "balance": "余额",
+      "noTokens": "暂无代币",
+      "loadingTokens": "加载代币信息中...",
+      "addToken": "添加代币",
+      "share": "分享",
+      "view": "查看",
+      "queriedBlocks": "已查询区块"
+    },
+    "addTokenModal": {
+      "title": "添加代币",
+      "label": "ERC20 代币地址",
+      "placeholder": "0x...",
+      "cancel": "取消",
+      "confirm": "确认添加",
+      "confirming": "添加中..."
+    },
+    "messages": {
+      "createSuccess": "Faucet 创建交易已提交，请等待确认",
+      "createError": "创建 Faucet 失败",
+      "addTokenSuccess": "代币添加交易已提交，请等待确认",
+      "addTokenError": "添加代币失败",
+      "shareSuccess": "Faucet 链接已复制",
+      "shareError": "分享失败",
+      "addressCopied": "地址已复制",
+      "copyError": "复制失败",
+      "connectWallet": "请先连接钱包",
+      "enterName": "请输入 Faucet 名称",
+      "enterAddress": "请输入代币地址",
+      "invalidAddress": "无效的地址格式",
+      "atLeastOneToken": "请至少输入一个代币地址"
+    },
+    "time": {
+      "justNow": "刚刚",
+      "minutesAgo": "分钟前",
+      "hoursAgo": "小时前",
+      "daysAgo": "天前",
+      "unknown": "未知"
+    },
+    "loadingProgress": {
+      "queryingEvents": "查询事件日志",
+      "gettingTimestamps": "获取区块时间戳...",
+      "parsingData": "解析 Faucet 数据...",
+      "loadingTokens": "加载代币信息..."
+    }
+  },
+  "faucet": {
+    "loading": "加载中...",
+    "share": "分享",
+    "faucetAddress": "Faucet 地址",
+    "wrongChain": {
+      "title": "链不匹配",
+      "deployed": "此 Faucet 部署在",
+      "connected": "您当前连接的是",
+      "switchButton": "切换到"
+    },
+    "unsupportedChain": {
+      "title": "不支持的网络",
+      "description": "当前连接的网络不被支持。请切换到以下网络之一：",
+      "bscTestnet": "BSC Testnet",
+      "sepolia": "Ethereum Sepolia"
+    },
+    "connectPrompt": "请先连接钱包以领取代币",
+    "noTokens": "此 Faucet 暂无可领取的代币",
+    "tokenCard": {
+      "balance": "余额",
+      "selectAmount": "选择领取数量",
+      "customAmount": "自定义数量",
+      "customPlaceholder": "输入数量",
+      "claim": "领取",
+      "claiming": "领取中..."
+    },
+    "messages": {
+      "claimSuccess": "代币领取交易已提交，请等待确认",
+      "claimError": "领取代币失败",
+      "connectWallet": "请先连接钱包",
+      "enterAmount": "请输入有效的领取数量",
+      "exceedBalance": "领取数量超过 Faucet 余额",
+      "linkCopied": "链接已复制到剪贴板",
+      "copyError": "复制失败",
+      "addressCopied": "地址已复制",
+      "switchChainError": "切换链失败，请在钱包中手动切换"
+    }
+  },
+  "footer": {
+    "copyright": "© 2024 Easy Faucet. Built with ❤️ for Web3 Community"
+  },
+  "common": {
+    "close": "关闭",
+    "confirm": "确认",
+    "cancel": "取消",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "add": "添加",
+    "remove": "移除",
+    "loading": "加载中...",
+    "success": "成功",
+    "error": "错误",
+    "warning": "警告",
+    "info": "信息",
+    "copy": "复制",
+    "copied": "已复制",
+    "submit": "提交",
+    "reset": "重置"
+  }
+}

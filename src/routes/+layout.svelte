@@ -4,11 +4,15 @@
     import favicon from "$lib/assets/favicon.svg";
     import { onMount } from "svelte";
     import { appKit } from "$lib/appkit";
+    import { _ } from "svelte-i18n";
+    import { switchLocale, locale, isLoading } from "$lib/i18n";
 
     let { children } = $props();
     let isMenuOpen = $state(false);
     let isConnected = $state(false);
     let address = $state("");
+    let currentLocale = $state("zh");
+    let i18nReady = $state(false);
 
     function toggleMenu() {
         isMenuOpen = !isMenuOpen;
@@ -29,7 +33,25 @@
         }
     }
 
+    function toggleLocale() {
+        const newLocale = currentLocale === "zh" ? "en" : "zh";
+        switchLocale(newLocale);
+        currentLocale = newLocale;
+    }
+
     onMount(() => {
+        // 订阅 i18n loading 状态
+        const unsubscribeLoading = isLoading.subscribe((loading) => {
+            i18nReady = !loading;
+        });
+
+        // 订阅 locale 变化
+        const unsubscribe = locale.subscribe((value) => {
+            if (value) {
+                currentLocale = value;
+            }
+        });
+
         // 监听钱包连接状态
         if (appKit) {
             appKit.subscribeAccount((account) => {
@@ -37,6 +59,11 @@
                 address = account?.address || "";
             });
         }
+
+        return () => {
+            unsubscribeLoading();
+            unsubscribe();
+        };
     });
 </script>
 
@@ -45,137 +72,176 @@
 </svelte:head>
 
 <div class="app-container">
-    <!-- Navigation Bar -->
-    <nav class="navbar">
-        <div class="nav-content">
-            <!-- Logo -->
-            <a href="/" class="logo" onclick={closeMenu}>
-                <span class="logo-icon">💧</span>
-                <span class="logo-text">Easy Faucet</span>
-            </a>
+    {#if i18nReady}
+        <!-- Navigation Bar -->
+        <nav class="navbar">
+            <div class="nav-content">
+                <!-- Logo -->
+                <a href="/" class="logo" onclick={closeMenu}>
+                    <span class="logo-icon">💧</span>
+                    <span class="logo-text">Easy Faucet</span>
+                </a>
 
-            <!-- Desktop Navigation -->
-            <div class="nav-links">
-                <a href="/" class="nav-link">首页</a>
-                <a href="/dashboard" class="nav-link">Dashboard</a>
+                <!-- Desktop Navigation -->
+                <div class="nav-links">
+                    <a href="/" class="nav-link">{$_("nav.home")}</a>
+                    <a href="/dashboard" class="nav-link"
+                        >{$_("nav.dashboard")}</a
+                    >
+                </div>
+
+                <!-- Wallet Button & Mobile Menu Toggle -->
+                <div class="nav-actions">
+                    <!-- Language Switcher -->
+                    <button
+                        class="lang-switcher"
+                        onclick={toggleLocale}
+                        title="Switch Language"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <path
+                                d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+                            ></path>
+                        </svg>
+                        <span>{currentLocale === "zh" ? "EN" : "中文"}</span>
+                    </button>
+
+                    <button class="wallet-button" onclick={connectWallet}>
+                        {#if isConnected && address}
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <rect
+                                    x="1"
+                                    y="4"
+                                    width="22"
+                                    height="16"
+                                    rx="2"
+                                    ry="2"
+                                ></rect>
+                                <line x1="1" y1="10" x2="23" y2="10"></line>
+                            </svg>
+                            <span>{formatAddress(address)}</span>
+                        {:else}
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <rect
+                                    x="1"
+                                    y="4"
+                                    width="22"
+                                    height="16"
+                                    rx="2"
+                                    ry="2"
+                                ></rect>
+                                <line x1="1" y1="10" x2="23" y2="10"></line>
+                            </svg>
+                            <span>{$_("nav.connectWallet")}</span>
+                        {/if}
+                    </button>
+                    <button
+                        class="menu-toggle"
+                        onclick={toggleMenu}
+                        aria-label="Toggle menu"
+                    >
+                        {#if isMenuOpen}
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        {:else}
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <line x1="3" y1="12" x2="21" y2="12"></line>
+                                <line x1="3" y1="6" x2="21" y2="6"></line>
+                                <line x1="3" y1="18" x2="21" y2="18"></line>
+                            </svg>
+                        {/if}
+                    </button>
+                </div>
             </div>
 
-            <!-- Wallet Button & Mobile Menu Toggle -->
-            <div class="nav-actions">
-                <button class="wallet-button" onclick={connectWallet}>
-                    {#if isConnected && address}
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        >
-                            <rect
-                                x="1"
-                                y="4"
-                                width="22"
-                                height="16"
-                                rx="2"
-                                ry="2"
-                            ></rect>
-                            <line x1="1" y1="10" x2="23" y2="10"></line>
-                        </svg>
-                        <span>{formatAddress(address)}</span>
-                    {:else}
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        >
-                            <rect
-                                x="1"
-                                y="4"
-                                width="22"
-                                height="16"
-                                rx="2"
-                                ry="2"
-                            ></rect>
-                            <line x1="1" y1="10" x2="23" y2="10"></line>
-                        </svg>
-                        <span>Connect Wallet</span>
-                    {/if}
-                </button>
-                <button
-                    class="menu-toggle"
-                    onclick={toggleMenu}
-                    aria-label="Toggle menu"
-                >
-                    {#if isMenuOpen}
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        >
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                    {:else}
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                        >
-                            <line x1="3" y1="12" x2="21" y2="12"></line>
-                            <line x1="3" y1="6" x2="21" y2="6"></line>
-                            <line x1="3" y1="18" x2="21" y2="18"></line>
-                        </svg>
-                    {/if}
-                </button>
+            <!-- Mobile Menu -->
+            {#if isMenuOpen}
+                <div class="mobile-menu">
+                    <a href="/" class="mobile-link" onclick={closeMenu}
+                        >{$_("nav.home")}</a
+                    >
+                    <a href="/dashboard" class="mobile-link" onclick={closeMenu}
+                        >{$_("nav.dashboard")}</a
+                    >
+                </div>
+            {/if}
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            {@render children()}
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p class="footer-text">
+                    {$_("footer.copyright")}
+                </p>
             </div>
+        </footer>
+    {:else}
+        <!-- Loading i18n -->
+        <div
+            style="display: flex; align-items: center; justify-content: center; min-height: 100vh; color: white;"
+        >
+            Loading...
         </div>
-
-        <!-- Mobile Menu -->
-        {#if isMenuOpen}
-            <div class="mobile-menu">
-                <a href="/" class="mobile-link" onclick={closeMenu}>首页</a>
-                <a href="/dashboard" class="mobile-link" onclick={closeMenu}
-                    >Dashboard</a
-                >
-            </div>
-        {/if}
-    </nav>
-
-    <!-- Main Content -->
-    <main class="main-content">
-        {@render children()}
-    </main>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-content">
-            <p class="footer-text">
-                © 2024 Easy Faucet. Built with ❤️ for Web3 Community
-            </p>
-        </div>
-    </footer>
+    {/if}
 </div>
 
 <style>
@@ -370,6 +436,41 @@
         letter-spacing: 0.02em;
     }
 
+    .lang-switcher {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        padding: 0.6rem 1rem;
+        color: white;
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+    }
+
+    .lang-switcher:hover {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .lang-switcher:active {
+        transform: translateY(0);
+    }
+
+    .lang-switcher svg {
+        flex-shrink: 0;
+    }
+
+    .lang-switcher span {
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+
     .menu-toggle {
         display: none;
         background: transparent;
@@ -478,6 +579,15 @@
             padding: 0.6rem 1.2rem;
             font-size: 0.85rem;
             border-radius: 14px;
+        }
+
+        .lang-switcher {
+            padding: 0.5rem 0.8rem;
+            font-size: 0.8rem;
+        }
+
+        .lang-switcher span {
+            font-size: 0.75rem;
         }
     }
 

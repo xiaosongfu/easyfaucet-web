@@ -1,0 +1,192 @@
+{
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "connectWallet": "Connect Wallet"
+  },
+  "home": {
+    "badge": "Web3 Token Faucet Platform",
+    "title": "Easy Faucet",
+    "subtitle": "Create Your Own Token Faucet\nMake Web3 Test Token Distribution Simple and Efficient",
+    "getStarted": "Get Started",
+    "learnMore": "Learn More",
+    "stats": {
+      "faucetsCreated": "Faucets Created",
+      "tokensDistributed": "Tokens Distributed",
+      "activeUsers": "Active Users"
+    },
+    "features": {
+      "title": "Powerful Features",
+      "subtitle": "One-stop solution to make token distribution effortless",
+      "createFaucet": {
+        "title": "Create Faucet",
+        "description": "Easily create your own token faucet without writing code"
+      },
+      "multiToken": {
+        "title": "Multi-Token Support",
+        "description": "Support adding any ERC20 tokens, flexibly manage your assets"
+      },
+      "quickClaim": {
+        "title": "Quick Claim",
+        "description": "Users can quickly and conveniently claim test tokens"
+      },
+      "secure": {
+        "title": "Secure & Reliable",
+        "description": "Based on smart contracts, transparent and secure token distribution mechanism"
+      }
+    },
+    "howItWorks": {
+      "title": "How It Works",
+      "subtitle": "Three steps to easily create your token faucet",
+      "step1": {
+        "title": "Connect Wallet",
+        "description": "Connect to the platform using your Web3 wallet"
+      },
+      "step2": {
+        "title": "Create Faucet",
+        "description": "Enter a name and add the ERC20 tokens you want to distribute"
+      },
+      "step3": {
+        "title": "Start Distribution",
+        "description": "Share your Faucet link and let users easily claim tokens"
+      }
+    },
+    "cta": {
+      "title": "Ready to Start?",
+      "subtitle": "Start creating your first token faucet now",
+      "button": "Get Started"
+    }
+  },
+  "dashboard": {
+    "unsupportedChain": {
+      "title": "Unsupported Network",
+      "description": "The currently connected network is not supported. Please switch to one of the following networks:",
+      "bscTestnet": "BSC Testnet",
+      "sepolia": "Ethereum Sepolia"
+    },
+    "createFaucet": {
+      "title": "Create New Faucet",
+      "name": "Faucet Name",
+      "namePlaceholder": "Enter Faucet name",
+      "tokenAddresses": "Token Addresses",
+      "tokenPlaceholder": "0x...",
+      "addToken": "Add Token Address",
+      "remove": "Remove",
+      "create": "Create Faucet",
+      "creating": "Creating..."
+    },
+    "faucetList": {
+      "title": "My Faucet List",
+      "refresh": "Refresh",
+      "loading": "Loading...",
+      "empty": "You haven't created any Faucet yet",
+      "connectPrompt": "Please connect your wallet to view your Faucet list",
+      "address": "Address",
+      "createdTime": "Created Time",
+      "tokenList": "Token List",
+      "balance": "Balance",
+      "noTokens": "No tokens yet",
+      "loadingTokens": "Loading token information...",
+      "addToken": "Add Token",
+      "share": "Share",
+      "view": "View",
+      "queriedBlocks": "Queried Blocks"
+    },
+    "addTokenModal": {
+      "title": "Add Token",
+      "label": "ERC20 Token Address",
+      "placeholder": "0x...",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "confirming": "Adding..."
+    },
+    "messages": {
+      "createSuccess": "Faucet creation transaction submitted, please wait for confirmation",
+      "createError": "Failed to create Faucet",
+      "addTokenSuccess": "Token addition transaction submitted, please wait for confirmation",
+      "addTokenError": "Failed to add token",
+      "shareSuccess": "Faucet link copied",
+      "shareError": "Failed to share",
+      "addressCopied": "Address copied",
+      "copyError": "Failed to copy",
+      "connectWallet": "Please connect your wallet first",
+      "enterName": "Please enter Faucet name",
+      "enterAddress": "Please enter token address",
+      "invalidAddress": "Invalid address format",
+      "atLeastOneToken": "Please enter at least one token address"
+    },
+    "time": {
+      "justNow": "Just now",
+      "minutesAgo": "minutes ago",
+      "hoursAgo": "hours ago",
+      "daysAgo": "days ago",
+      "unknown": "Unknown"
+    },
+    "loadingProgress": {
+      "queryingEvents": "Querying event logs",
+      "gettingTimestamps": "Getting block timestamps...",
+      "parsingData": "Parsing Faucet data...",
+      "loadingTokens": "Loading token information..."
+    }
+  },
+  "faucet": {
+    "loading": "Loading...",
+    "share": "Share",
+    "faucetAddress": "Faucet Address",
+    "wrongChain": {
+      "title": "Chain Mismatch",
+      "deployed": "This Faucet is deployed on",
+      "connected": "You are currently connected to",
+      "switchButton": "Switch to"
+    },
+    "unsupportedChain": {
+      "title": "Unsupported Network",
+      "description": "The currently connected network is not supported. Please switch to one of the following networks:",
+      "bscTestnet": "BSC Testnet",
+      "sepolia": "Ethereum Sepolia"
+    },
+    "connectPrompt": "Please connect your wallet to claim tokens",
+    "noTokens": "This Faucet has no claimable tokens yet",
+    "tokenCard": {
+      "balance": "Balance",
+      "selectAmount": "Select claim amount",
+      "customAmount": "Custom amount",
+      "customPlaceholder": "Enter amount",
+      "claim": "Claim",
+      "claiming": "Claiming..."
+    },
+    "messages": {
+      "claimSuccess": "Token claim transaction submitted, please wait for confirmation",
+      "claimError": "Failed to claim tokens",
+      "connectWallet": "Please connect your wallet first",
+      "enterAmount": "Please enter a valid claim amount",
+      "exceedBalance": "Claim amount exceeds Faucet balance",
+      "linkCopied": "Link copied to clipboard",
+      "copyError": "Failed to copy",
+      "addressCopied": "Address copied",
+      "switchChainError": "Failed to switch chain, please switch manually in your wallet"
+    }
+  },
+  "footer": {
+    "copyright": "© 2024 Easy Faucet. Built with ❤️ for Web3 Community"
+  },
+  "common": {
+    "close": "Close",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "remove": "Remove",
+    "loading": "Loading...",
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Info",
+    "copy": "Copy",
+    "copied": "Copied",
+    "submit": "Submit",
+    "reset": "Reset"
+  }
+}

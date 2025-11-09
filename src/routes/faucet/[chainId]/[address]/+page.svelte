@@ -17,6 +17,8 @@
         CHAIN_CONFIGS,
         type ChainConfig,
     } from "$lib/contracts";
+    import { _ } from "svelte-i18n";
+    import { get } from "svelte/store";
 
     interface TokenInfo {
         address: string;
@@ -217,7 +219,7 @@
         decimals: number,
     ) {
         if (!isConnected || !account?.address) {
-            alert("请先连接钱包");
+            alert(get(_)("faucet.messages.connectWallet"));
             return;
         }
 
@@ -240,7 +242,7 @@
             });
 
             console.log("领取交易已提交:", result);
-            alert("代币领取交易已提交，请等待确认");
+            alert(get(_)("faucet.messages.claimSuccess"));
 
             // 延迟重新加载余额
             setTimeout(() => {
@@ -248,7 +250,11 @@
             }, 3000);
         } catch (error) {
             console.error("领取代币失败:", error);
-            alert("领取代币失败: " + (error as Error).message);
+            alert(
+                get(_)("faucet.messages.claimError") +
+                    ": " +
+                    (error as Error).message,
+            );
         } finally {
             claimingToken = null;
         }
@@ -257,7 +263,7 @@
     async function claimCustomAmount(token: TokenInfo) {
         const customAmount = customAmounts[token.address];
         if (!customAmount || parseFloat(customAmount) <= 0) {
-            alert("请输入有效的领取数量");
+            alert(get(_)("faucet.messages.enterAmount"));
             return;
         }
 
@@ -265,7 +271,7 @@
         const amountInWei = parseUnits(customAmount, token.decimals);
 
         if (amountInWei > token.balance) {
-            alert("领取数量超过 Faucet 余额");
+            alert(get(_)("faucet.messages.exceedBalance"));
             return;
         }
 
@@ -280,9 +286,10 @@
     async function copyToClipboard(text: string) {
         try {
             await navigator.clipboard.writeText(text);
-            showToast("地址已复制");
+            showToast(get(_)("faucet.messages.addressCopied"));
         } catch (error) {
             console.error("复制失败:", error);
+            showToast(get(_)("faucet.messages.copyError"));
         }
     }
 
@@ -301,10 +308,10 @@
         try {
             const url = window.location.href;
             await navigator.clipboard.writeText(url);
-            showToast("链接已复制到剪贴板");
+            showToast(get(_)("faucet.messages.linkCopied"));
         } catch (error) {
             console.error("复制链接失败:", error);
-            showToast("复制失败");
+            showToast(get(_)("faucet.messages.copyError"));
         }
     }
 </script>
@@ -313,16 +320,18 @@
     {#if isLoading}
         <div class="loading-container">
             <div class="spinner"></div>
-            <p>加载中...</p>
+            <p>{$_("faucet.loading")}</p>
         </div>
     {:else if isWrongChain && faucetChainConfig}
         <div class="wrong-chain-warning">
-            <h2>⚠️ 链不匹配</h2>
+            <h2>⚠️ {$_("faucet.wrongChain.title")}</h2>
             <p>
-                此 Faucet 部署在 <strong>{faucetChainConfig.chainName}</strong> 上。
+                {$_("faucet.wrongChain.deployed")}
+                <strong>{faucetChainConfig.chainName}</strong>
             </p>
             <p>
-                您当前连接的是 <strong>{currentChainConfig.chainName}</strong>。
+                {$_("faucet.wrongChain.connected")}
+                <strong>{currentChainConfig.chainName}</strong>
             </p>
             <button
                 class="switch-chain-btn"
@@ -335,21 +344,22 @@
                             });
                         } catch (error) {
                             console.error("切换链失败:", error);
-                            alert("切换链失败，请在钱包中手动切换");
+                            alert(get(_)("faucet.messages.switchChainError"));
                         }
                     }
                 }}
             >
-                切换到 {faucetChainConfig.chainName}
+                {$_("faucet.wrongChain.switchButton")}
+                {faucetChainConfig.chainName}
             </button>
         </div>
     {:else if isUnsupportedChain}
         <div class="unsupported-chain-warning">
-            <h2>⚠️ 不支持的网络</h2>
-            <p>当前连接的网络不被支持。请切换到以下网络之一：</p>
+            <h2>⚠️ {$_("faucet.unsupportedChain.title")}</h2>
+            <p>{$_("faucet.unsupportedChain.description")}</p>
             <ul>
-                <li>BSC Testnet</li>
-                <li>Ethereum Sepolia</li>
+                <li>{$_("faucet.unsupportedChain.bscTestnet")}</li>
+                <li>{$_("faucet.unsupportedChain.sepolia")}</li>
             </ul>
         </div>
     {:else}
@@ -365,7 +375,7 @@
                 <button
                     class="share-btn"
                     onclick={shareFaucet}
-                    title="分享此 Faucet"
+                    title={$_("faucet.share")}
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -384,11 +394,11 @@
                         <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
                         <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
                     </svg>
-                    <span>分享</span>
+                    <span>{$_("faucet.share")}</span>
                 </button>
             </div>
             <div class="faucet-address">
-                <span class="address-label">Faucet 地址:</span>
+                <span class="address-label">{$_("faucet.faucetAddress")}:</span>
                 <span class="address-text">{faucetAddress}</span>
                 <button
                     class="copy-btn"
@@ -418,14 +428,14 @@
 
         {#if !isConnected}
             <div class="connect-prompt">
-                <p>请先连接钱包以领取代币</p>
+                <p>{$_("faucet.connectPrompt")}</p>
             </div>
         {/if}
 
         <div class="tokens-container">
             {#if tokens.length === 0}
                 <div class="empty-state">
-                    <p>此 Faucet 暂无可领取的代币</p>
+                    <p>{$_("faucet.noTokens")}</p>
                 </div>
             {:else}
                 {#each tokens as token}
@@ -473,7 +483,9 @@
                                 </div>
                             </div>
                             <div class="token-balance">
-                                <span class="balance-label">余额:</span>
+                                <span class="balance-label"
+                                    >{$_("faucet.tokenCard.balance")}:</span
+                                >
                                 <span class="balance-value"
                                     >{formatBalance(
                                         token.balance,
@@ -484,7 +496,9 @@
                         </div>
 
                         <div class="claim-section">
-                            <h3 class="section-title">选择领取数量</h3>
+                            <h3 class="section-title">
+                                {$_("faucet.tokenCard.selectAmount")}
+                            </h3>
 
                             <div class="preset-amounts">
                                 {#each presetAmounts as amount}
@@ -516,13 +530,17 @@
 
                             <div class="custom-amount">
                                 <label for="custom-{token.address}"
-                                    >自定义数量:</label
+                                    >{$_(
+                                        "faucet.tokenCard.customAmount",
+                                    )}:</label
                                 >
                                 <div class="custom-input-group">
                                     <input
                                         id="custom-{token.address}"
                                         type="number"
-                                        placeholder="输入数量"
+                                        placeholder={$_(
+                                            "faucet.tokenCard.customPlaceholder",
+                                        )}
                                         value={customAmounts[token.address] ||
                                             ""}
                                         oninput={(e) =>
@@ -544,9 +562,9 @@
                                             !customAmounts[token.address]}
                                     >
                                         {#if claimingToken === token.address}
-                                            领取中...
+                                            {$_("faucet.tokenCard.claiming")}
                                         {:else}
-                                            领取
+                                            {$_("faucet.tokenCard.claim")}
                                         {/if}
                                     </button>
                                 </div>

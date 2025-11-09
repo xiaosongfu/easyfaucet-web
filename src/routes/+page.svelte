@@ -1,48 +1,17 @@
 <script lang="ts">
     import { onMount } from "svelte";
+    import { _ } from "svelte-i18n";
 
     let mounted = false;
 
     onMount(() => {
         mounted = true;
     });
-
-    const features = [
-        {
-            icon: "💧",
-            title: "创建 Faucet",
-            description: "轻松创建您自己的代币水龙头，无需编写代码",
-        },
-        {
-            icon: "🪙",
-            title: "多币种支持",
-            description: "支持添加任意 ERC20 代币，灵活管理您的资产",
-        },
-        {
-            icon: "⚡",
-            title: "快速领取",
-            description: "用户可以快速便捷地领取测试代币",
-        },
-        {
-            icon: "🔒",
-            title: "安全可靠",
-            description: "基于智能合约，透明且安全的代币分发机制",
-        },
-    ];
-
-    const stats = [
-        { value: "1000+", label: "Faucets 创建" },
-        { value: "50K+", label: "代币分发" },
-        { value: "10K+", label: "活跃用户" },
-    ];
 </script>
 
 <svelte:head>
-    <title>Easy Faucet - Web3 代币水龙头平台</title>
-    <meta
-        name="description"
-        content="创建和管理您自己的 Web3 代币水龙头，支持 ERC20 代币"
-    />
+    <title>Easy Faucet - {$_("home.badge")}</title>
+    <meta name="description" content={$_("home.subtitle")} />
 </svelte:head>
 
 <div class="page-container">
@@ -57,21 +26,21 @@
         <div class="hero-content">
             <div class="hero-badge">
                 <span class="badge-icon">✨</span>
-                <span>Web3 代币水龙头平台</span>
+                <span>{$_("home.badge")}</span>
             </div>
 
             <h1 class="hero-title">
                 <span class="gradient-text">Easy Faucet</span>
             </h1>
+            <h1 class="hero-title">{$_("home.title")}</h1>
 
             <p class="hero-subtitle">
-                创建属于您自己的代币水龙头<br />
-                让 Web3 测试代币分发变得简单高效
+                {@html $_("home.subtitle").replace("\n", "<br />")}
             </p>
 
             <div class="hero-buttons">
                 <a href="/dashboard" class="btn btn-primary">
-                    <span>开始创建</span>
+                    <span>{$_("home.getStarted")}</span>
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="20"
@@ -88,18 +57,28 @@
                     </svg>
                 </a>
                 <a href="#features" class="btn btn-secondary">
-                    <span>了解更多</span>
+                    <span>{$_("home.learnMore")}</span>
                 </a>
             </div>
 
             <!-- Stats -->
             <div class="stats">
-                {#each stats as stat}
-                    <div class="stat-item">
-                        <div class="stat-value">{stat.value}</div>
-                        <div class="stat-label">{stat.label}</div>
+                <div class="stat-item">
+                    <div class="stat-value">1000+</div>
+                    <div class="stat-label">
+                        {$_("home.stats.faucetsCreated")}
                     </div>
-                {/each}
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">50K+</div>
+                    <div class="stat-label">
+                        {$_("home.stats.tokensDistributed")}
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">10K+</div>
+                    <div class="stat-label">{$_("home.stats.activeUsers")}</div>
+                </div>
             </div>
         </div>
 
@@ -117,36 +96,65 @@
     <!-- Features Section -->
     <section id="features" class="features">
         <div class="section-header">
-            <h2 class="section-title">强大功能</h2>
+            <h2 class="section-title">{$_("home.features.title")}</h2>
             <p class="section-subtitle">
-                一站式解决方案，让代币分发变得轻而易举
+                {$_("home.features.subtitle")}
             </p>
         </div>
 
         <div class="features-grid">
-            {#each features as feature, i}
-                <div class="feature-card" style="animation-delay: {i * 0.1}s">
-                    <div class="feature-icon">{feature.icon}</div>
-                    <h3 class="feature-title">{feature.title}</h3>
-                    <p class="feature-description">{feature.description}</p>
-                </div>
-            {/each}
+            <div class="feature-card">
+                <div class="feature-icon">💧</div>
+                <h3 class="feature-title">
+                    {$_("home.features.createFaucet.title")}
+                </h3>
+                <p class="feature-description">
+                    {$_("home.features.createFaucet.description")}
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🪙</div>
+                <h3 class="feature-title">
+                    {$_("home.features.multiToken.title")}
+                </h3>
+                <p class="feature-description">
+                    {$_("home.features.multiToken.description")}
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3 class="feature-title">
+                    {$_("home.features.quickClaim.title")}
+                </h3>
+                <p class="feature-description">
+                    {$_("home.features.quickClaim.description")}
+                </p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3 class="feature-title">
+                    {$_("home.features.secure.title")}
+                </h3>
+                <p class="feature-description">
+                    {$_("home.features.secure.description")}
+                </p>
+            </div>
         </div>
     </section>
 
     <!-- How It Works Section -->
     <section class="how-it-works">
         <div class="section-header">
-            <h2 class="section-title">如何使用</h2>
-            <p class="section-subtitle">三步轻松创建您的代币水龙头</p>
+            <h2 class="section-title">{$_("home.howItWorks.title")}</h2>
+            <p class="section-subtitle">{$_("home.howItWorks.subtitle")}</p>
         </div>
 
         <div class="steps">
             <div class="step">
                 <div class="step-number">1</div>
                 <div class="step-content">
-                    <h3>连接钱包</h3>
-                    <p>使用您的 Web3 钱包连接到平台</p>
+                    <h3>{$_("home.howItWorks.step1.title")}</h3>
+                    <p>{$_("home.howItWorks.step1.description")}</p>
                 </div>
             </div>
 
@@ -155,8 +163,8 @@
             <div class="step">
                 <div class="step-number">2</div>
                 <div class="step-content">
-                    <h3>创建 Faucet</h3>
-                    <p>输入名称并添加您想要分发的 ERC20 代币</p>
+                    <h3>{$_("home.howItWorks.step2.title")}</h3>
+                    <p>{$_("home.howItWorks.step2.description")}</p>
                 </div>
             </div>
 
@@ -165,8 +173,8 @@
             <div class="step">
                 <div class="step-number">3</div>
                 <div class="step-content">
-                    <h3>开始分发</h3>
-                    <p>分享您的 Faucet 链接，让用户轻松领取代币</p>
+                    <h3>{$_("home.howItWorks.step3.title")}</h3>
+                    <p>{$_("home.howItWorks.step3.description")}</p>
                 </div>
             </div>
         </div>
@@ -175,10 +183,10 @@
     <!-- CTA Section -->
     <section class="cta">
         <div class="cta-content">
-            <h2 class="cta-title">准备好了吗？</h2>
-            <p class="cta-subtitle">立即开始创建您的第一个代币水龙头</p>
+            <h2 class="cta-title">{$_("home.cta.title")}</h2>
+            <p class="cta-subtitle">{$_("home.cta.subtitle")}</p>
             <a href="/dashboard" class="btn btn-cta">
-                <span>立即开始</span>
+                <span>{$_("home.cta.button")}</span>
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="20"
