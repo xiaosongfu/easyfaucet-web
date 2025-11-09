@@ -41,6 +41,8 @@
     let isLoadingFaucets = false;
     let loadingProgress = "";
     let queriedBlockRange = "";
+    let toastMessage = "";
+    let showToast = false;
 
     onMount(() => {
         // 获取初始账户状态
@@ -268,6 +270,25 @@
         return formatUnits(balance, decimals);
     }
 
+    async function copyToClipboard(text: string, label: string = "地址") {
+        try {
+            await navigator.clipboard.writeText(text);
+            showToastMessage(`${label}已复制`);
+        } catch (error) {
+            console.error("复制失败:", error);
+            showToastMessage("复制失败", true);
+        }
+    }
+
+    function showToastMessage(message: string, isError: boolean = false) {
+        toastMessage = message;
+        showToast = true;
+
+        setTimeout(() => {
+            showToast = false;
+        }, 2000);
+    }
+
     function addTokenInput() {
         tokenAddresses = [...tokenAddresses, ""];
     }
@@ -458,6 +479,40 @@
                                 <span class="address-text"
                                     >{faucet.address}</span
                                 >
+                                <button
+                                    class="copy-btn"
+                                    on:click={() =>
+                                        copyToClipboard(
+                                            faucet.address,
+                                            "Faucet 地址",
+                                        )}
+                                    title="复制地址"
+                                    aria-label="复制 Faucet 地址"
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                    >
+                                        <rect
+                                            x="9"
+                                            y="9"
+                                            width="13"
+                                            height="13"
+                                            rx="2"
+                                            ry="2"
+                                        ></rect>
+                                        <path
+                                            d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                                        ></path>
+                                    </svg>
+                                </button>
                             </p>
 
                             {#if faucet.isLoadingTokens}
@@ -484,6 +539,40 @@
                                                     6,
                                                 )}...{token.address.slice(-4)}
                                             </span>
+                                            <button
+                                                class="copy-btn copy-btn-small"
+                                                on:click={() =>
+                                                    copyToClipboard(
+                                                        token.address,
+                                                        `${token.name} 地址`,
+                                                    )}
+                                                title="复制代币地址"
+                                                aria-label="复制代币地址"
+                                            >
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width="14"
+                                                    height="14"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    stroke-width="2"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                >
+                                                    <rect
+                                                        x="9"
+                                                        y="9"
+                                                        width="13"
+                                                        height="13"
+                                                        rx="2"
+                                                        ry="2"
+                                                    ></rect>
+                                                    <path
+                                                        d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                                                    ></path>
+                                                </svg>
+                                            </button>
                                         </div>
                                     {/each}
                                 </div>
@@ -507,6 +596,13 @@
             {/if}
         {/if}
     </div>
+
+    <!-- Toast 提示 -->
+    {#if showToast}
+        <div class="toast">
+            {toastMessage}
+        </div>
+    {/if}
 </div>
 
 <style>
@@ -747,6 +843,65 @@
         font-family: monospace;
         font-size: 0.85rem;
         color: #007bff;
+    }
+
+    .copy-btn {
+        background: transparent;
+        border: 1px solid transparent;
+        cursor: pointer;
+        padding: 0.25rem;
+        margin-left: 0.5rem;
+        transition: all 0.2s;
+        vertical-align: middle;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #666;
+    }
+
+    .copy-btn:hover {
+        background: #f0f0f0;
+        border-color: #ddd;
+        color: #007bff;
+    }
+
+    .copy-btn:active {
+        transform: scale(0.95);
+        background: #e0e0e0;
+    }
+
+    .copy-btn-small {
+        padding: 0.15rem;
+        margin-left: 0.3rem;
+    }
+
+    .copy-btn svg {
+        display: block;
+    }
+
+    .toast {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background: #333;
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
     }
 
     .token-loading,
