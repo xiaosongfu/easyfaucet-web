@@ -199,20 +199,16 @@
 </div>
 
 <style>
-    :global(body) {
-        margin: 0;
-        padding: 0;
-        overflow-x: hidden;
-    }
-
     .page-container {
         min-height: 100vh;
-        background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+        background: transparent;
         color: white;
         font-family:
             system-ui,
             -apple-system,
             sans-serif;
+        margin: 0;
+        padding: 0;
     }
 
     /* Hero Section */
@@ -224,6 +220,8 @@
         justify-content: center;
         padding: 2rem;
         overflow: hidden;
+        margin: 0;
+        background: transparent;
     }
 
     .hero-background {
@@ -539,6 +537,7 @@
         padding: 8rem 2rem;
         max-width: 1200px;
         margin: 0 auto;
+        background: transparent;
     }
 
     .section-header {
@@ -619,6 +618,7 @@
         padding: 8rem 2rem;
         max-width: 1200px;
         margin: 0 auto;
+        background: transparent;
     }
 
     .steps {
@@ -696,6 +696,8 @@
     .cta {
         padding: 8rem 2rem;
         text-align: center;
+        background: transparent;
+        margin: 0;
     }
 
     .cta-content {
