@@ -4,15 +4,16 @@
         getAccount,
         getPublicClient,
         readContract,
+        watchAccount,
     } from "@wagmi/core";
     import { onMount } from "svelte";
     import { formatUnits } from "viem";
     import EasyFaucetFactoryAbi from "$lib/abi/EasyFaucetFactory.json";
     import EasyFaucetAbi from "$lib/abi/EasyFaucet.json";
     import {
-        EasyFaucetFactoryAddress,
-        EasyFaucetBeaconAddress,
-        EasyFaucetFactoryDeployBlock,
+        getCurrentChainConfig,
+        isSupportedChain,
+        type ChainConfig,
     } from "$lib/contracts";
     import { appKit, wagmiAdapter } from "$lib/appkit";
 
@@ -29,6 +30,7 @@
         owner: string;
         blockNumber: bigint;
         timestamp: number;
+        chainId: number;
         tokens: TokenInfo[];
         isLoadingTokens: boolean;
     }
@@ -45,6 +47,11 @@
     let toastMessage = "";
     let showToast = false;
 
+    // 当前链配置
+    let currentChainConfig: ChainConfig;
+    let currentChainId: number | undefined;
+    let isUnsupportedChain = false;
+
     // 添加代币相关状态
     let showAddTokenModal = false;
     let addTokenAddress = "";
@@ -56,28 +63,74 @@
         if (wagmiAdapter && wagmiAdapter.wagmiConfig) {
             account = getAccount(wagmiAdapter.wagmiConfig);
             isConnected = account?.isConnected || false;
+            currentChainId = account?.chainId;
 
-            // 如果已连接，加载 faucet 列表
-            if (isConnected && account?.address) {
+            // 更新链配置
+            updateChainConfig(currentChainId);
+
+            // 如果已连接且链支持，加载 faucet 列表
+            if (isConnected && account?.address && !isUnsupportedChain) {
                 loadUserFaucets();
             }
+
+            // 监听链变化
+            watchAccount(wagmiAdapter.wagmiConfig, {
+                onChange(newAccount) {
+                    const chainChanged = currentChainId !== newAccount?.chainId;
+                    account = newAccount;
+                    isConnected = newAccount?.isConnected || false;
+                    currentChainId = newAccount?.chainId;
+
+                    // 更新链配置
+                    updateChainConfig(currentChainId);
+
+                    // 链变化或账户变化时重新加载
+                    if (chainChanged || (isConnected && newAccount?.address)) {
+                        if (!isUnsupportedChain) {
+                            loadUserFaucets();
+                        } else {
+                            userFaucets = [];
+                        }
+                    } else if (!isConnected) {
+                        userFaucets = [];
+                    }
+                },
+            });
         }
 
         // 监听 AppKit 状态变化
         if (appKit) {
             appKit.subscribeAccount((newAccount) => {
-                account = newAccount;
-                isConnected = newAccount?.isConnected || false;
+                if (wagmiAdapter && wagmiAdapter.wagmiConfig) {
+                    account = getAccount(wagmiAdapter.wagmiConfig);
+                    isConnected = account?.isConnected || false;
+                    currentChainId = account?.chainId;
 
-                // 账户变化时重新加载 faucet 列表
-                if (isConnected && newAccount?.address) {
-                    loadUserFaucets();
-                } else {
-                    userFaucets = [];
+                    updateChainConfig(currentChainId);
+
+                    if (
+                        isConnected &&
+                        account?.address &&
+                        !isUnsupportedChain
+                    ) {
+                        loadUserFaucets();
+                    } else {
+                        userFaucets = [];
+                    }
                 }
             });
         }
     });
+
+    function updateChainConfig(chainId: number | undefined) {
+        currentChainConfig = getCurrentChainConfig(chainId);
+        isUnsupportedChain = chainId ? !isSupportedChain(chainId) : false;
+        console.log("当前链配置:", {
+            chainId,
+            chainName: currentChainConfig.chainName,
+            isSupported: !isUnsupportedChain,
+        });
+    }
 
     async function loadUserFaucets() {
         if (!account?.address || !wagmiAdapter?.wagmiConfig) {
@@ -98,10 +151,10 @@
             const latestBlock = await publicClient.getBlockNumber();
 
             // 合约部署的起始区块
-            const CONTRACT_DEPLOY_BLOCK = EasyFaucetFactoryDeployBlock;
+            const CONTRACT_DEPLOY_BLOCK = currentChainConfig.deployBlock;
 
-            // 定义每批查询的区块范围（500 个区块）
-            const BLOCK_RANGE = 499n;
+            // 定义每批查询的区块范围（2000 个区块）
+            const BLOCK_RANGE = 1999n;
             let allLogs: any[] = [];
 
             // 从合约部署区块开始查询到最新区块
@@ -120,9 +173,9 @@
 
             while (fromBlock <= latestBlock) {
                 try {
-                    loadingProgress = `查询区块 ${fromBlock} - ${toBlock} (${batchCount + 1}/${totalBatches})`;
+                    loadingProgress = `查询事件日志 (${batchCount + 1}/${totalBatches})`;
                     const logs = await publicClient.getLogs({
-                        address: EasyFaucetFactoryAddress,
+                        address: currentChainConfig.factoryAddress,
                         event: {
                             type: "event",
                             name: "NewFaucet",
@@ -185,50 +238,98 @@
                 }
             }
 
-            loadingProgress = "解析数据...";
-            // 解析事件数据并获取时间戳
-            const logsWithTimestamp = await Promise.all(
-                allLogs.map(async (log) => {
+            if (allLogs.length === 0) {
+                userFaucets = [];
+                loadingProgress = "";
+                queriedBlockRange = `已查询区块: ${CONTRACT_DEPLOY_BLOCK} - ${latestBlock}`;
+                return;
+            }
+
+            loadingProgress = "获取区块时间戳...";
+
+            // 收集所有唯一的区块号
+            const uniqueBlockNumbers = [
+                ...new Set(allLogs.map((log) => log.blockNumber)),
+            ];
+
+            // 批量获取区块信息（避免重复查询）
+            const blockInfoMap = new Map<bigint, number>();
+            await Promise.all(
+                uniqueBlockNumbers.map(async (blockNumber) => {
                     try {
                         const block = await publicClient.getBlock({
-                            blockNumber: log.blockNumber,
+                            blockNumber,
                         });
-                        return {
-                            owner: log.args.owner as string,
-                            name: log.args.name as string,
-                            address: log.args.faucet as string,
-                            blockNumber: log.blockNumber,
-                            timestamp: Number(block.timestamp),
-                            tokens: [],
-                            isLoadingTokens: false,
-                        };
+                        blockInfoMap.set(blockNumber, Number(block.timestamp));
                     } catch (error) {
                         console.error(
-                            `获取区块 ${log.blockNumber} 时间戳失败:`,
+                            `获取区块 ${blockNumber} 时间戳失败:`,
                             error,
                         );
-                        return {
-                            owner: log.args.owner as string,
-                            name: log.args.name as string,
-                            address: log.args.faucet as string,
-                            blockNumber: log.blockNumber,
-                            timestamp: 0,
-                            tokens: [],
-                            isLoadingTokens: false,
-                        };
+                        blockInfoMap.set(blockNumber, 0);
                     }
                 }),
             );
 
-            userFaucets = logsWithTimestamp;
+            loadingProgress = "解析 Faucet 数据...";
+
+            // 解析事件数据并添加时间戳（不触发响应式更新）
+            const faucetsData: FaucetInfo[] = allLogs.map((log) => ({
+                owner: log.args.owner as string,
+                name: log.args.name as string,
+                address: log.args.faucet as string,
+                blockNumber: log.blockNumber,
+                timestamp: blockInfoMap.get(log.blockNumber) || 0,
+                chainId: currentChainId!,
+                tokens: [],
+                isLoadingTokens: false,
+            }));
 
             // 按时间戳降序排序（最新的在前）
-            userFaucets.sort((a, b) => b.timestamp - a.timestamp);
+            faucetsData.sort((a, b) => b.timestamp - a.timestamp);
 
-            console.log("加载到的 Faucet 列表:", userFaucets);
+            console.log("加载到的 Faucet 列表:", faucetsData);
 
-            // 加载每个 Faucet 的代币信息
-            await loadTokenInfosForAllFaucets();
+            loadingProgress = "加载代币信息...";
+
+            // 批量加载所有代币信息（不触发中间更新）
+            await Promise.all(
+                faucetsData.map(async (faucet) => {
+                    if (!wagmiAdapter?.wagmiConfig) {
+                        return;
+                    }
+
+                    try {
+                        const result = await readContract(
+                            wagmiAdapter.wagmiConfig,
+                            {
+                                address: faucet.address as `0x${string}`,
+                                abi: EasyFaucetAbi,
+                                functionName: "tokenInfos",
+                            },
+                        );
+
+                        const [addresses, names, decimals, balances] =
+                            result as [string[], string[], number[], bigint[]];
+
+                        faucet.tokens = addresses.map((addr, i) => ({
+                            address: addr,
+                            name: names[i],
+                            decimals: decimals[i],
+                            balance: balances[i],
+                        }));
+                    } catch (error) {
+                        console.error(
+                            `加载 Faucet ${faucet.name} 的代币信息失败:`,
+                            error,
+                        );
+                        faucet.tokens = [];
+                    }
+                }),
+            );
+
+            // 一次性更新所有数据（只触发一次响应式更新）
+            userFaucets = faucetsData;
             loadingProgress = "";
 
             // 记录查询的区块范围
@@ -239,61 +340,6 @@
             loadingProgress = "";
         } finally {
             isLoadingFaucets = false;
-        }
-    }
-
-    async function loadTokenInfosForAllFaucets() {
-        if (!wagmiAdapter?.wagmiConfig) {
-            return;
-        }
-
-        // 并行加载所有 Faucet 的代币信息
-        const promises = userFaucets.map((faucet, index) =>
-            loadTokenInfoForFaucet(index),
-        );
-
-        await Promise.all(promises);
-    }
-
-    async function loadTokenInfoForFaucet(index: number) {
-        if (!wagmiAdapter?.wagmiConfig) {
-            return;
-        }
-
-        const faucet = userFaucets[index];
-        faucet.isLoadingTokens = true;
-        userFaucets = [...userFaucets]; // 触发响应式更新
-
-        try {
-            const result = await readContract(wagmiAdapter.wagmiConfig, {
-                address: faucet.address as `0x${string}`,
-                abi: EasyFaucetAbi,
-                functionName: "tokenInfos",
-            });
-
-            // result 是一个包含 4 个数组的元组
-            const [addresses, names, decimals, balances] = result as [
-                string[],
-                string[],
-                number[],
-                bigint[],
-            ];
-
-            // 组合成代币信息数组
-            faucet.tokens = addresses.map((addr, i) => ({
-                address: addr,
-                name: names[i],
-                decimals: decimals[i],
-                balance: balances[i],
-            }));
-
-            console.log(`Faucet ${faucet.name} 的代币信息:`, faucet.tokens);
-        } catch (error) {
-            console.error(`加载 Faucet ${faucet.name} 的代币信息失败:`, error);
-            faucet.tokens = [];
-        } finally {
-            faucet.isLoadingTokens = false;
-            userFaucets = [...userFaucets]; // 触发响应式更新
         }
     }
 
@@ -466,10 +512,10 @@
 
             const result = await writeContract(wagmiAdapter.wagmiConfig, {
                 abi: EasyFaucetFactoryAbi,
-                address: EasyFaucetFactoryAddress,
+                address: currentChainConfig.factoryAddress,
                 functionName: "newFaucet",
                 args: [
-                    EasyFaucetBeaconAddress,
+                    currentChainConfig.beaconAddress,
                     account.address,
                     faucetName.trim(),
                     validTokens,
@@ -497,6 +543,24 @@
 </script>
 
 <div class="dashboard-container">
+    <!-- 不支持的链提示 -->
+    {#if isUnsupportedChain}
+        <div class="unsupported-chain-warning">
+            <h2>⚠️ 不支持的网络</h2>
+            <p>当前连接的网络不被支持。请切换到以下网络之一：</p>
+            <ul>
+                <li>BSC Testnet</li>
+                <li>Ethereum Sepolia</li>
+            </ul>
+        </div>
+    {:else if currentChainId}
+        <div class="chain-info">
+            <span class="chain-badge">
+                🌐 {currentChainConfig.chainName}
+            </span>
+        </div>
+    {/if}
+
     <div class="create-faucet-section">
         <h2>创建新的 Faucet</h2>
 
@@ -736,7 +800,7 @@
                                 添加代币
                             </button>
                             <a
-                                href={`/faucet/${faucet.address}`}
+                                href={`/faucet/${faucet.chainId}/${faucet.address}`}
                                 class="view-btn"
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -847,6 +911,61 @@
             sans-serif;
         color: white;
         min-height: 100vh;
+    }
+
+    /* 不支持的链警告 */
+    .unsupported-chain-warning {
+        background: rgba(255, 193, 7, 0.1);
+        border: 2px solid rgba(255, 193, 7, 0.5);
+        border-radius: 20px;
+        padding: 2.5rem;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    .unsupported-chain-warning h2 {
+        color: #ffc107;
+        margin: 0 0 1rem 0;
+        font-size: 1.8rem;
+    }
+
+    .unsupported-chain-warning p {
+        color: rgba(255, 255, 255, 0.8);
+        margin: 0 0 1rem 0;
+        font-size: 1.1rem;
+    }
+
+    .unsupported-chain-warning ul {
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0 0 0;
+    }
+
+    .unsupported-chain-warning li {
+        color: rgba(255, 255, 255, 0.9);
+        padding: 0.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    /* 链信息徽章 */
+    .chain-info {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .chain-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: rgba(102, 126, 234, 0.2);
+        border: 1px solid rgba(102, 126, 234, 0.5);
+        border-radius: 50px;
+        color: white;
+        font-size: 1rem;
+        font-weight: 600;
+        backdrop-filter: blur(10px);
     }
 
     .create-faucet-section {

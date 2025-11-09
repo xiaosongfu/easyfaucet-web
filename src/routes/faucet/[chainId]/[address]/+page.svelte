@@ -10,6 +10,13 @@
     import { formatUnits, parseUnits } from "viem";
     import EasyFaucetAbi from "$lib/abi/EasyFaucet.json";
     import { wagmiAdapter, appKit } from "$lib/appkit";
+    import {
+        getCurrentChainConfig,
+        isSupportedChain,
+        getChainConfig,
+        CHAIN_CONFIGS,
+        type ChainConfig,
+    } from "$lib/contracts";
 
     interface TokenInfo {
         address: string;
@@ -24,6 +31,12 @@
     let isLoading = true;
     let account: any = null;
     let isConnected = false;
+    let currentChainId: number | undefined;
+    let currentChainConfig: ChainConfig;
+    let isUnsupportedChain = false;
+    let faucetChainId: number | undefined;
+    let faucetChainConfig: ChainConfig | undefined;
+    let isWrongChain = false;
 
     // 领取状态
     let claimingToken: string | null = null;
@@ -35,10 +48,22 @@
     let unsubscribeAccount: (() => void) | undefined;
 
     onMount(() => {
-        // 获取 URL 参数中的地址
+        // 获取 URL 参数中的链 ID 和地址
         page.subscribe((p) => {
+            const chainIdParam = p.params.chainId;
             faucetAddress = p.params.address || "";
-            if (faucetAddress) {
+
+            // 解析链 ID
+            if (chainIdParam) {
+                faucetChainId = Number(chainIdParam);
+                faucetChainConfig = getChainConfig(faucetChainId);
+
+                if (!faucetChainConfig) {
+                    console.error(`不支持的链 ID: ${faucetChainId}`);
+                }
+            }
+
+            if (faucetAddress && faucetChainId) {
                 loadFaucetInfo();
             }
         });
@@ -47,16 +72,33 @@
         if (wagmiAdapter && wagmiAdapter.wagmiConfig) {
             account = getAccount(wagmiAdapter.wagmiConfig);
             isConnected = account?.isConnected || false;
+            currentChainId = account?.chainId;
+
+            // 更新链配置
+            updateChainConfig(currentChainId);
 
             // 监听账户变化
             unsubscribeAccount = watchAccount(wagmiAdapter.wagmiConfig, {
                 onChange(newAccount) {
+                    const chainChanged = currentChainId !== newAccount?.chainId;
                     account = newAccount;
                     isConnected = newAccount?.isConnected || false;
+                    currentChainId = newAccount?.chainId;
+
+                    // 更新链配置
+                    updateChainConfig(currentChainId);
+
                     console.log("账户状态变化:", {
                         isConnected,
                         address: newAccount?.address,
+                        chainId: currentChainId,
+                        chainName: currentChainConfig.chainName,
                     });
+
+                    // 如果链变化，重新加载 Faucet 信息
+                    if (chainChanged && faucetAddress && !isUnsupportedChain) {
+                        loadFaucetInfo();
+                    }
                 },
             });
         }
@@ -67,14 +109,31 @@
                 if (wagmiAdapter && wagmiAdapter.wagmiConfig) {
                     account = getAccount(wagmiAdapter.wagmiConfig);
                     isConnected = account?.isConnected || false;
+                    currentChainId = account?.chainId;
+
+                    updateChainConfig(currentChainId);
+
                     console.log("AppKit 账户变化:", {
                         isConnected,
                         address: account?.address,
+                        chainId: currentChainId,
                     });
                 }
             });
         }
     });
+
+    function updateChainConfig(chainId: number | undefined) {
+        currentChainConfig = getCurrentChainConfig(chainId);
+        isUnsupportedChain = chainId ? !isSupportedChain(chainId) : false;
+
+        // 检查是否在正确的链上
+        if (faucetChainId && chainId) {
+            isWrongChain = chainId !== faucetChainId;
+        } else {
+            isWrongChain = false;
+        }
+    }
 
     onDestroy(() => {
         // 清理订阅
@@ -90,6 +149,15 @@
 
         try {
             isLoading = true;
+
+            // 更新链状态
+            updateChainConfig(currentChainId);
+
+            // 如果在错误的链上，不加载数据
+            if (isWrongChain) {
+                isLoading = false;
+                return;
+            }
 
             // 获取 Faucet 名称
             const name = await readContract(wagmiAdapter.wagmiConfig, {
@@ -236,7 +304,50 @@
             <div class="spinner"></div>
             <p>加载中...</p>
         </div>
+    {:else if isWrongChain && faucetChainConfig}
+        <div class="wrong-chain-warning">
+            <h2>⚠️ 链不匹配</h2>
+            <p>
+                此 Faucet 部署在 <strong>{faucetChainConfig.chainName}</strong> 上。
+            </p>
+            <p>
+                您当前连接的是 <strong>{currentChainConfig.chainName}</strong>。
+            </p>
+            <button
+                class="switch-chain-btn"
+                onclick={async () => {
+                    if (wagmiAdapter?.wagmiConfig) {
+                        try {
+                            const { switchChain } = await import("@wagmi/core");
+                            await switchChain(wagmiAdapter.wagmiConfig, {
+                                chainId: faucetChainId!,
+                            });
+                        } catch (error) {
+                            console.error("切换链失败:", error);
+                            alert("切换链失败，请在钱包中手动切换");
+                        }
+                    }
+                }}
+            >
+                切换到 {faucetChainConfig.chainName}
+            </button>
+        </div>
+    {:else if isUnsupportedChain}
+        <div class="unsupported-chain-warning">
+            <h2>⚠️ 不支持的网络</h2>
+            <p>当前连接的网络不被支持。请切换到以下网络之一：</p>
+            <ul>
+                <li>BSC Testnet</li>
+                <li>Ethereum Sepolia</li>
+            </ul>
+        </div>
     {:else}
+        <div class="chain-info-header">
+            <span class="chain-badge">
+                🌐 {currentChainConfig.chainName}
+            </span>
+        </div>
+
         <div class="page-header">
             <h1 class="page-title">{faucetName}</h1>
             <div class="faucet-address">
@@ -424,6 +535,114 @@
         padding: 2rem;
         max-width: 1200px;
         margin: 0 auto;
+        color: white;
+    }
+
+    /* 不支持的链警告 */
+    .unsupported-chain-warning {
+        background: rgba(255, 193, 7, 0.1);
+        border: 2px solid rgba(255, 193, 7, 0.5);
+        border-radius: 20px;
+        padding: 3rem;
+        margin: 2rem auto;
+        text-align: center;
+        max-width: 600px;
+    }
+
+    .unsupported-chain-warning h2 {
+        color: #ffc107;
+        margin: 0 0 1.5rem 0;
+        font-size: 2rem;
+    }
+
+    .unsupported-chain-warning p {
+        color: rgba(255, 255, 255, 0.8);
+        margin: 0 0 1rem 0;
+        font-size: 1.1rem;
+    }
+
+    .unsupported-chain-warning ul {
+        list-style: none;
+        padding: 0;
+        margin: 1.5rem 0 0 0;
+    }
+
+    .unsupported-chain-warning li {
+        color: rgba(255, 255, 255, 0.9);
+        padding: 0.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    /* 链不匹配警告 */
+    .wrong-chain-warning {
+        background: rgba(255, 87, 34, 0.1);
+        border: 2px solid rgba(255, 87, 34, 0.5);
+        border-radius: 20px;
+        padding: 3rem;
+        margin: 2rem auto;
+        text-align: center;
+        max-width: 600px;
+    }
+
+    .wrong-chain-warning h2 {
+        color: #ff5722;
+        margin: 0 0 1.5rem 0;
+        font-size: 2rem;
+    }
+
+    .wrong-chain-warning p {
+        color: rgba(255, 255, 255, 0.9);
+        margin: 0 0 1rem 0;
+        font-size: 1.1rem;
+    }
+
+    .wrong-chain-warning strong {
+        color: white;
+        font-weight: 700;
+    }
+
+    .switch-chain-btn {
+        margin-top: 1.5rem;
+        padding: 1rem 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 12px;
+        color: white;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .switch-chain-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    }
+
+    .switch-chain-btn:active {
+        transform: translateY(-1px);
+    }
+
+    /* 链信息徽章 */
+    .chain-info-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .chain-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: rgba(102, 126, 234, 0.2);
+        border: 1px solid rgba(102, 126, 234, 0.5);
+        border-radius: 50px;
+        color: white;
+        font-size: 1rem;
+        font-weight: 600;
+        backdrop-filter: blur(10px);
     }
 
     .loading-container {

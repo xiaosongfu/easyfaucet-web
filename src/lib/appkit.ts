@@ -2,7 +2,7 @@
 import { browser } from "$app/environment";
 import { createAppKit } from "@reown/appkit";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
-import { bscTestnet } from "@reown/appkit/networks";
+import { bscTestnet, sepolia } from "@reown/appkit/networks";
 
 // Only initialize in browser environment
 let appKit: ReturnType<typeof createAppKit> | undefined = undefined;
@@ -14,18 +14,19 @@ if (browser) {
     throw new Error("VITE_PROJECT_ID is not set");
   }
 
-  const networks = [bscTestnet];
+  // 支持的网络列表
+  const networks = [bscTestnet, sepolia] as const;
 
   // Create adapter
   wagmiAdapter = new WagmiAdapter({
-    networks,
+    networks: networks as any,
     projectId,
   });
 
   // Initialize AppKit
   appKit = createAppKit({
     adapters: [wagmiAdapter],
-    networks: [bscTestnet],
+    networks: [bscTestnet, sepolia],
     defaultNetwork: bscTestnet,
     projectId,
     metadata: {
