@@ -89,8 +89,7 @@
       "loadingTokens": "Loading token information...",
       "addToken": "Add Token",
       "share": "Share",
-      "view": "View",
-      "queriedBlocks": "Queried Blocks"
+      "view": "View"
     },
     "addTokenModal": {
       "title": "Add Token",
@@ -124,7 +123,6 @@
     },
     "loadingProgress": {
       "queryingEvents": "Querying event logs",
-      "gettingTimestamps": "Getting block timestamps...",
       "parsingData": "Parsing Faucet data...",
       "loadingTokens": "Loading token information..."
     }
@@ -168,7 +166,7 @@
     }
   },
   "footer": {
-    "copyright": "© 2024 Easy Faucet. Built with ❤️ for Web3 Community"
+    "copyright": "© 2025 Easy Faucet. Built with ❤️ for Web3 Community"
   },
   "common": {
     "close": "Close",

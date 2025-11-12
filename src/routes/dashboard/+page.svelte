@@ -2,7 +2,6 @@
     import {
         writeContract,
         getAccount,
-        getPublicClient,
         readContract,
         watchAccount,
     } from "@wagmi/core";
@@ -30,7 +29,6 @@
         name: string;
         address: string;
         owner: string;
-        blockNumber: bigint;
         timestamp: number;
         chainId: number;
         tokens: TokenInfo[];
@@ -45,7 +43,6 @@
     let userFaucets: FaucetInfo[] = [];
     let isLoadingFaucets = false;
     let loadingProgress = "";
-    let queriedBlockRange = "";
     let toastMessage = "";
     let showToast = false;
 
@@ -144,159 +141,80 @@
             loadingProgress = get(_)(
                 "dashboard.loadingProgress.queryingEvents",
             );
-            const publicClient = getPublicClient(wagmiAdapter.wagmiConfig);
 
-            if (!publicClient) {
-                throw new Error("Public client 未初始化");
-            }
-
-            // 获取最新区块号
-            loadingProgress = get(_)(
-                "dashboard.loadingProgress.gettingTimestamps",
-            );
-            const latestBlock = await publicClient.getBlockNumber();
-
-            // 合约部署的起始区块
-            const CONTRACT_DEPLOY_BLOCK = currentChainConfig.deployBlock;
-
-            // 定义每批查询的区块范围（2000 个区块）
-            const BLOCK_RANGE = 1999n;
-            let allLogs: any[] = [];
-
-            // 从合约部署区块开始查询到最新区块
-            let fromBlock = CONTRACT_DEPLOY_BLOCK;
-            let toBlock = fromBlock + BLOCK_RANGE;
-            if (toBlock > latestBlock) {
-                toBlock = latestBlock;
-            }
-
-            // 计算需要查询的批次数
-            const totalBlocks = latestBlock - CONTRACT_DEPLOY_BLOCK;
-            const totalBatches = Math.ceil(
-                Number(totalBlocks) / (Number(BLOCK_RANGE) + 1),
-            );
-            let batchCount = 0;
-
-            while (fromBlock <= latestBlock) {
-                try {
-                    loadingProgress = `${get(_)("dashboard.loadingProgress.queryingEvents")} (${batchCount + 1}/${totalBatches})`;
-                    const logs = await publicClient.getLogs({
-                        address: currentChainConfig.factoryAddress,
-                        event: {
-                            type: "event",
-                            name: "NewFaucet",
-                            inputs: [
-                                {
-                                    indexed: true,
-                                    name: "owner",
-                                    type: "address",
-                                },
-                                {
-                                    indexed: false,
-                                    name: "name",
-                                    type: "string",
-                                },
-                                {
-                                    indexed: false,
-                                    name: "faucet",
-                                    type: "address",
-                                },
-                            ],
-                        },
-                        args: {
-                            owner: account.address,
-                        },
-                        fromBlock: fromBlock,
-                        toBlock: toBlock,
-                    });
-
-                    allLogs = allLogs.concat(logs);
-
-                    // 准备下一批查询
-                    fromBlock = toBlock + 1n;
-                    toBlock = fromBlock + BLOCK_RANGE;
-                    if (toBlock > latestBlock) {
-                        toBlock = latestBlock;
-                    }
-                    batchCount++;
-
-                    // 如果已经到达最新区块，停止查询
-                    if (fromBlock > latestBlock) {
-                        break;
-                    }
-                } catch (batchError) {
-                    console.error(
-                        `查询区块 ${fromBlock} - ${toBlock} 失败:`,
-                        batchError,
-                    );
-                    // 如果某一批查询失败，继续查询下一批
-                    fromBlock = toBlock + 1n;
-                    toBlock = fromBlock + BLOCK_RANGE;
-                    if (toBlock > latestBlock) {
-                        toBlock = latestBlock;
-                    }
-                    batchCount++;
-
-                    // 如果已经到达最新区块，停止查询
-                    if (fromBlock > latestBlock) {
-                        break;
+            // 使用 The Graph API 查询
+            const graphApiUrl = currentChainConfig.graphApiUrl;
+            const query = `
+                query GetUserFaucets($owner: String!) {
+                    newFaucets(
+                        orderBy: blockTimestamp
+                        orderDirection: desc
+                        where: { owner: $owner }
+                    ) {
+                        id
+                        name
+                        faucet
+                        owner
+                        blockTimestamp
                     }
                 }
+            `;
+
+            loadingProgress = get(_)(
+                "dashboard.loadingProgress.queryingEvents",
+            );
+
+            const response = await fetch(graphApiUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    query,
+                    variables: {
+                        owner: account.address.toLowerCase(),
+                    },
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(
+                    `Graph API 请求失败: ${response.status} ${response.statusText}`,
+                );
             }
 
-            if (allLogs.length === 0) {
+            const result = await response.json();
+
+            if (result.errors) {
+                throw new Error(
+                    `Graph API 查询错误: ${JSON.stringify(result.errors)}`,
+                );
+            }
+
+            const faucetsFromGraph = result.data?.newFaucets || [];
+
+            if (faucetsFromGraph.length === 0) {
                 userFaucets = [];
                 loadingProgress = "";
-                queriedBlockRange = `${get(_)("dashboard.faucetList.queriedBlocks")}: ${CONTRACT_DEPLOY_BLOCK} - ${latestBlock}`;
                 return;
             }
 
-            loadingProgress = get(_)(
-                "dashboard.loadingProgress.gettingTimestamps",
-            );
+            loadingProgress = get(_)("dashboard.loadingProgress.parsingData");
 
-            // 收集所有唯一的区块号
-            const uniqueBlockNumbers = [
-                ...new Set(allLogs.map((log) => log.blockNumber)),
-            ];
-
-            // 批量获取区块信息（避免重复查询）
-            const blockInfoMap = new Map<bigint, number>();
-            await Promise.all(
-                uniqueBlockNumbers.map(async (blockNumber) => {
-                    try {
-                        const block = await publicClient.getBlock({
-                            blockNumber,
-                        });
-                        blockInfoMap.set(blockNumber, Number(block.timestamp));
-                    } catch (error) {
-                        console.error(
-                            `获取区块 ${blockNumber} 时间戳失败:`,
-                            error,
-                        );
-                        blockInfoMap.set(blockNumber, 0);
-                    }
+            // 解析 Graph API 返回的数据
+            const faucetsData: FaucetInfo[] = faucetsFromGraph.map(
+                (item: any) => ({
+                    owner: item.owner,
+                    name: item.name,
+                    address: item.faucet,
+                    timestamp: Number(item.blockTimestamp),
+                    chainId: currentChainId!,
+                    tokens: [],
+                    isLoadingTokens: false,
                 }),
             );
 
-            loadingProgress = get(_)("dashboard.loadingProgress.parsingData");
-
-            // 解析事件数据并添加时间戳（不触发响应式更新）
-            const faucetsData: FaucetInfo[] = allLogs.map((log) => ({
-                owner: log.args.owner as string,
-                name: log.args.name as string,
-                address: log.args.faucet as string,
-                blockNumber: log.blockNumber,
-                timestamp: blockInfoMap.get(log.blockNumber) || 0,
-                chainId: currentChainId!,
-                tokens: [],
-                isLoadingTokens: false,
-            }));
-
-            // 按时间戳降序排序（最新的在前）
-            faucetsData.sort((a, b) => b.timestamp - a.timestamp);
-
-            console.log("加载到的 Faucet 列表:", faucetsData);
+            console.log("从 Graph API 加载到的 Faucet 列表:", faucetsData);
 
             loadingProgress = get(_)("dashboard.loadingProgress.loadingTokens");
 
@@ -339,9 +257,6 @@
             // 一次性更新所有数据（只触发一次响应式更新）
             userFaucets = faucetsData;
             loadingProgress = "";
-
-            // 记录查询的区块范围
-            queriedBlockRange = `已查询区块: ${CONTRACT_DEPLOY_BLOCK} - ${latestBlock} (共 ${Number(latestBlock - CONTRACT_DEPLOY_BLOCK + 1n)} 个区块)`;
         } catch (error) {
             console.error("加载 Faucet 列表失败:", error);
             alert("加载 Faucet 列表失败: " + (error as Error).message);
@@ -690,9 +605,6 @@
         {:else if userFaucets.length === 0}
             <div class="empty-container">
                 <p class="empty-message">{$_("dashboard.faucetList.empty")}</p>
-                {#if queriedBlockRange}
-                    <p class="block-range-info">{queriedBlockRange}</p>
-                {/if}
             </div>
         {:else}
             <div class="faucet-list">
@@ -898,9 +810,6 @@
                     </div>
                 {/each}
             </div>
-            {#if queriedBlockRange}
-                <p class="block-range-info">{queriedBlockRange}</p>
-            {/if}
         {/if}
     </div>
 

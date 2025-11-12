@@ -5,7 +5,7 @@ export interface ChainConfig {
   chainName: string;
   beaconAddress: `0x${string}`;
   factoryAddress: `0x${string}`;
-  deployBlock: bigint;
+  graphApiUrl: string;
 }
 
 // BSC Testnet 配置
@@ -14,7 +14,7 @@ export const BSC_TESTNET_CONFIG: ChainConfig = {
   chainName: "BSC Testnet",
   beaconAddress: "0xc633E74171C61Ede8913d5C7fC2F16bad3290E7A",
   factoryAddress: "0x00c706EaC85100E127A087966F0bc73a5b2ceaf0",
-  deployBlock: 71805318n,
+  graphApiUrl: "https://api.studio.thegraph.com/query/1715532/easyfaucet-bnbtestnet/version/latest",
 };
 
 // Ethereum Sepolia 配置
@@ -23,7 +23,7 @@ export const SEPOLIA_CONFIG: ChainConfig = {
   chainName: "Sepolia",
   beaconAddress: "0x6D239B2127Fba527f4a280c1780aa74FC3Add7E0",
   factoryAddress: "0x8C7270053166EA8D8d7A5F7bee73c30b26B7049F",
-  deployBlock: 9594114n,
+  graphApiUrl: "https://api.studio.thegraph.com/query/1715532/easyfaucet-sepolia/version/latest",
 };
 
 // 所有支持的链配置

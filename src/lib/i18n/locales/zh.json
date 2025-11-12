@@ -89,8 +89,7 @@
       "loadingTokens": "加载代币信息中...",
       "addToken": "添加代币",
       "share": "分享",
-      "view": "查看",
-      "queriedBlocks": "已查询区块"
+      "view": "查看"
     },
     "addTokenModal": {
       "title": "添加代币",
@@ -124,7 +123,6 @@
     },
     "loadingProgress": {
       "queryingEvents": "查询事件日志",
-      "gettingTimestamps": "获取区块时间戳...",
       "parsingData": "解析 Faucet 数据...",
       "loadingTokens": "加载代币信息..."
     }
@@ -168,7 +166,7 @@
     }
   },
   "footer": {
-    "copyright": "© 2024 Easy Faucet. Built with ❤️ for Web3 Community"
+    "copyright": "© 2025 Easy Faucet. Built with ❤️ for Web3 Community"
   },
   "common": {
     "close": "关闭",
