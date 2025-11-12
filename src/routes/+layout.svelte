@@ -2,6 +2,7 @@
     import "$lib/appkit";
     import "../styles/global.css";
     import favicon from "$lib/assets/favicon.svg";
+    import logo from "$lib/assets/logo.svg";
     import { onMount } from "svelte";
     import { appKit } from "$lib/appkit";
     import { _ } from "svelte-i18n";
@@ -78,7 +79,7 @@
             <div class="nav-content">
                 <!-- Logo -->
                 <a href="/" class="logo" onclick={closeMenu}>
-                    <span class="logo-icon">💧</span>
+                    <img src={logo} alt="Easy Faucet Logo" class="logo-icon" />
                     <span class="logo-text">Easy Faucet</span>
                 </a>
 
@@ -92,6 +93,32 @@
 
                 <!-- Wallet Button & Mobile Menu Toggle -->
                 <div class="nav-actions">
+                    <!-- GitHub Link -->
+                    <a
+                        href="https://github.com/xiaosongfu/easyfaucet-web"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="github-link"
+                        title="GitHub"
+                        aria-label="View on GitHub"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path
+                                d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"
+                            ></path>
+                        </svg>
+                    </a>
+
                     <!-- Language Switcher -->
                     <button
                         class="lang-switcher"
@@ -217,6 +244,31 @@
                     <a href="/dashboard" class="mobile-link" onclick={closeMenu}
                         >{$_("nav.dashboard")}</a
                     >
+                    <a
+                        href="https://github.com/xiaosongfu/easyfaucet-web"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="mobile-link"
+                        onclick={closeMenu}
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            style="display: inline-block; vertical-align: middle; margin-right: 0.5rem;"
+                        >
+                            <path
+                                d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"
+                            ></path>
+                        </svg>
+                        {$_("nav.github")}
+                    </a>
                 </div>
             {/if}
         </nav>
@@ -232,6 +284,29 @@
                 <p class="footer-text">
                     {$_("footer.copyright")}
                 </p>
+                <a
+                    href="https://github.com/xiaosongfu/easyfaucet-web"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="footer-github-link"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <path
+                            d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"
+                        ></path>
+                    </svg>
+                    <span>{$_("footer.github")}</span>
+                </a>
             </div>
         </footer>
     {:else}
@@ -310,8 +385,11 @@
     }
 
     .logo-icon {
-        font-size: 2rem;
+        width: 2.5rem;
+        height: 2.5rem;
+        display: block;
         animation: float 3s ease-in-out infinite;
+        flex-shrink: 0;
     }
 
     @keyframes float {
@@ -436,6 +514,36 @@
         letter-spacing: 0.02em;
     }
 
+    .github-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        padding: 0.6rem;
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+        text-decoration: none;
+    }
+
+    .github-link:hover {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+        color: #667eea;
+    }
+
+    .github-link:active {
+        transform: translateY(0);
+    }
+
+    .github-link svg {
+        flex-shrink: 0;
+    }
+
     .lang-switcher {
         display: inline-flex;
         align-items: center;
@@ -541,12 +649,38 @@
     .footer-content {
         max-width: 1400px;
         margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
     }
 
     .footer-text {
         color: rgba(255, 255, 255, 0.6);
         margin: 0;
         font-size: 0.9rem;
+    }
+
+    .footer-github-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+    }
+
+    .footer-github-link:hover {
+        color: white;
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .footer-github-link svg {
+        flex-shrink: 0;
     }
 
     /* Responsive Design */
@@ -589,6 +723,10 @@
         .lang-switcher span {
             font-size: 0.75rem;
         }
+
+        .github-link {
+            padding: 0.5rem;
+        }
     }
 
     @media (max-width: 480px) {
@@ -601,7 +739,8 @@
         }
 
         .logo-icon {
-            font-size: 1.75rem;
+            width: 2rem;
+            height: 2rem;
         }
     }
 </style>
